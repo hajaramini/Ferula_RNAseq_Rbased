@@ -1,0 +1,183 @@
+---
+title: "Ferula_RNAseq_DEG"
+author: "Hajar"
+date: "June 8, 2017"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#import data
+counts <- read.csv ("/Users/hajaramini/Ferula_RNAseq_Rbased/input/combined_counts.csv", header=T, check.names = F) 
+head(counts)
+colnames(counts)
+rownames(counts)
+# make the 1st column as rownames
+counts <- read.csv("/Users/hajaramini/Ferula_RNAseq_Rbased/input/combined_counts.csv", header=T, row.names="target_id")
+test1=read.table("/Users/hajaramini/Ferula_RNAseq_Rbased/input/combined_counts.csv",header=T,row.names=1)
+head(counts)
+colnames(counts)[1] 
+rownames(counts)
+dim(counts) # 158617 20 158617 is num of transcripts in Reference
+
+#filter based on read count, assign group, normalize, design matrix
+hist(colSums(counts,na.rm=TRUE))
+colSums(counts,na.rm=TRUE)
+#general threshold
+colSums(counts,na.rm=TRUE) > 1000000 # all samples are true
+counts.low<-counts[colSums(counts,na.rm=TRUE) < 1000000],]
+counts.nolow <- counts[,colSums(counts,na.rm=TRUE) > 1000000]
+dim(counts.nolow) #all of samples has more than 1000000 counts
+#sample description
+samples <- data.frame(file=colnames(counts),
+                      batch=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\1",colnames(counts))),
+                      trt=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\2",colnames(counts))),
+                    
+                      genotype=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\3",colnames(counts)))) 
+head(samples) 
+
+#convert NA to zero
+counts[is.na(counts)]<-0
+# eliminating genes with low expression levels by retaining genes with > 10 reads in >= 3 samples
+counts.small <-counts[rowSums(counts > 10) >= 3,] 
+dim(counts.small) #61234 20 
+dim(counts) #158617 20
+samples.small <- data.frame(file=colnames(counts.small),
+                      batch=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\1",colnames(counts.small))),
+                      trt=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\2",colnames(counts.small))),
+                    
+                      genotype=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\3",colnames(counts.small)))) 
+head(samples.small)
+write.csv(counts.small, file="/Users/hajaramini/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.coutns.small.csv") # use this for next analysis
+save(samples.small,file="/Users/hajaramini/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.samples.small.Rdata")
+#assign group by combining all the experimental factors into one combined factor
+Genotype<-levels(samples.small$genotype)
+samples.small$group <- paste(samples.small$genotype,samples.small$trt,samples.small$batch,sep=".")
+samples.small$genotype<-as.character(samples.small$genotype)
+#install.packages("edgeR")
+library(edgeR)
+dge <- DGEList(counts=counts.small, group=samples.small$group) 
+length(colnames(counts.small)) # 20
+dge<-calcNormFactors(dge, method = "TMM")
+# look at the normalization factors
+nrow(dge$samples) # 20 
+hist(dge$samples[,3]) # norm.factor > 3 seem outlier? I don't want to remove sample 
+plot(log10(dge$sample[,"lib.size"]),dge$sample[,"norm.factors"]) 
+#when we want to change the ref from first icon to others
+samples.small$genotype <- as.factor(samples.small$genotype)
+samples.small$genotype <- relevel(samples.small$genotype,ref="3")
+samples.small$trt <- as.factor(samples.small$trt)
+samples.small$trt <- relevel(samples.small$trt,ref="R")
+
+#design model for each factor (genotype & trt factors)
+design1 <- model.matrix(~genotype+trt + batch, data=samples.small)
+colnames(design1)
+#First the overall dispersion
+dge <- estimateGLMCommonDisp(dge,design1, verbose = T) #Disp = 0.84667, BCV =  0.9201 
+dge <- estimateGLMTrendedDisp(dge,design1)
+dge <- estimateGLMTagwiseDisp(dge,design1)
+save(dge,file="/Users/hajaramini/Ferula_RNAseq_Rbased/output/dge.Rdata")
+plotBCV(dge)
+dev.copy(png,'BCV.png')
+mds.dge <- plotMDS(dge, method = "bcv",labels = dge$samples$group)
+dge.fit <- glmFit(dge, design1)
+colnames(dge.fit)
+#To find genes that are differentially expressed in gt 2 & 6 vs 3
+dge.lrt <- glmLRT(dge.fit,coef = c("genotype2","genotype6"))
+#the top 10 most differentially expressed genes
+topTags(dge.lrt)
+#summary(decideTestsDGE(dge.lrt,p=0.05)) why error?
+#Extract genes with a FDR < 0.01 (could also use 0.05)
+DEgenes1 <- topTags(dge.lrt,n = Inf)$table[topTags(dge.lrt,n = Inf)$table$FDR<0.05,]
+dim(DEgenes1) #2874    6
+colnames(DEgenes1)
+head(DEgenes1)
+#save to a file
+write.csv(DEgenes1,file="/Users/hajaramini/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEgenes1.csv")
+#To find genes that are differentially expressed in gt 2 & 6 vs 3 seperately
+dge.lrt.gt2 <- glmLRT(dge.fit,coef = c("genotype2"))
+topTags(dge.lrt.gt2)
+summary(decideTestsDGE(dge.lrt.gt2, p=0.05))
+dge.lrt.gt6 <- glmLRT(dge.fit,coef = c("genotype6"))
+topTags(dge.lrt.gt6)
+summary(decideTestsDGE(dge.lrt.gt6, p=0.05))
+DEGs1 <- data.frame ("gt2" = as.data.frame(summary(decideTestsDGE(dge.lrt.gt2, p=0.05)))$Freq,
+                                     "gt6" = as.data.frame(summary(decideTestsDGE(dge.lrt.gt6, p=0.05)))$Freq)
+rownames(DEGs1) <- c("down", "no", "up")
+DEGs1 <- DEGs1[c("down", "up"),]
+DEGs1
+save(DEGs1, file="/Users/hajaramini/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEGs1.Rdata")
+#library(reshape2)
+#library(ggplot2)
+DEGs1.melt <- melt(DEGs1)
+DEGs1.melt$DE <- rep(c("down", "up"), 2)
+colnames(DEGs1.melt) <- c("genotype", "number", "DE")
+DEGs1.melt
+# reorder: up 1st down 2nd 
+DEGs1.melt$DE <- factor(DEGs1.melt$DE, levels = c("up", "down"))
+DEGs1.melt <- DEGs1.melt[order(DEGs1.melt$DE),]
+DEGs1.melt
+DEGs1.melt$gt <- gsub("(X)(\\.)(S|L|F)(\\.)", "\\1",DEGs1.melt$genotype)
+
+DEGs1.melt$trt <- gsub("(X)(\\.)(R|S|L|F)(\\.)", "\\2",DEGs1.melt$genotype)
+### making ggplot for DEGs
+library(ggplot2)
+p.DEGs1 <- ggplot(data = DEGs1.melt)
+p.DEGs1 <- p.DEGs1 + geom_bar(mapping = aes(fill=DE, x = factor(DE), y = number) , stat= "identity")
+#p.DEGs1 <- p.DEGs1 + facet_grid(~genotype) 
+p.DEGs1 <- p.DEGs1 + labs(y = "number of differentially expressed genes", x = "")
+p.DEGs1
+ggsave(p.DEGs1, file="/Users/hajaramini/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG1.png")
+
+#To find genes that are differentially expressed in trt S, F & L vs R 
+dge.lrt.trt <- glmLRT(dge.fit,coef = c("trtF","trtL", "trtS"))
+#the top 10 most differentially expressed genes
+topTags(dge.lrt.trt)
+#summary(decideTestsDGE(dge.lrt,p=0.05)) why error?
+#Extract genes with a FDR < 0.01 (could also use 0.05)
+DEgenes2 <- topTags(dge.lrt.trt,n = Inf)$table[topTags(dge.lrt.trt,n = Inf)$table$FDR<0.05,]
+dim(DEgenes2) #15386 7
+colnames(DEgenes2)
+head(DEgenes2)
+#To find genes that are differentially expressed in trt S, F & L vs R seperately
+dge.lrt.trtF <- glmLRT(dge.fit,coef = c("trtF"))
+topTags(dge.lrt.trtF)
+summary(decideTestsDGE(dge.lrt.trtF, p=0.05))
+dge.lrt.trtL <- glmLRT(dge.fit,coef = c("trtL"))
+topTags(dge.lrt.trtL)
+summary(decideTestsDGE(dge.lrt.trtL, p=0.05))
+dge.lrt.trtS <- glmLRT(dge.fit,coef = c("trtS"))
+topTags(dge.lrt.trtS)
+summary(decideTestsDGE(dge.lrt.trtS, p=0.05))
+
+DEGs2 <- data.frame ("trtF" = as.data.frame(summary(decideTestsDGE(dge.lrt.trtF, p=0.05)))$Freq,
+                                     "trtL" = as.data.frame(summary(decideTestsDGE(dge.lrt.trtL, p=0.05)))$Freq,
+                                     "trtS"= as.data.frame( summary(decideTestsDGE(dge.lrt.trtS, p=0.05)))$Freq)
+rownames(DEGs2) <- c("down", "no", "up")
+DEGs2 <- DEGs2[c("down", "up"),]
+DEGs2
+save(DEGs2, file="/Users/hajaramini/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEGs2.Rdata")
+#library(reshape2)
+#library(ggplot2)
+DEGs2.melt <- melt(DEGs2)
+DEGs2.melt$DE <- rep(c("down", "up"), 3)
+colnames(DEGs2.melt) <- c("genotype", "number", "DE")
+DEGs2.melt
+# reorder: up 1st down 2nd 
+DEGs2.melt$DE <- factor(DEGs2.melt$DE, levels = c("up", "down"))
+DEGs2.melt <- DEGs2.melt[order(DEGs2.melt$DE),]
+DEGs2.melt
+DEGs2.melt$gt <- gsub("(X)(\\.)(S|L|F)(\\.)", "\\1",DEGs2.melt$genotype)
+
+DEGs2.melt$trt <- gsub("(X)(\\.)(R|S|L|F)(\\.)", "\\2",DEGs2.melt$genotype)
+### making ggplot for DEGs
+library(ggplot2)
+p.DEGs2 <- ggplot(data = DEGs2.melt)
+p.DEGs2 <- p.DEGs2 + geom_bar(mapping = aes(fill=DE, x = factor(DE), y = number) , stat= "identity")
+p.DEGs2 <- p.DEGs2 + facet_grid(~genotype) 
+p.DEGs2 <- p.DEGs2 + labs(y = "number of differentially expressed genes", x = "")
+p.DEGs2
+ggsave(p.DEGs12, file="/Users/hajaramini/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG2.png")
