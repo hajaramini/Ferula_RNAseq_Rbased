@@ -11,24 +11,23 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 #import data
+```{r}
 counts <- read.csv ("/Users/hajaramini/Ferula_RNAseq_Rbased/input/combined_counts.csv", header=T, check.names = F) 
 head(counts)
 colnames(counts)
 rownames(counts)
 # make the 1st column as rownames
 counts <- read.csv("/Users/hajaramini/Ferula_RNAseq_Rbased/input/combined_counts.csv", header=T, row.names="target_id")
-test1=read.table("/Users/hajaramini/Ferula_RNAseq_Rbased/input/combined_counts.csv",header=T,row.names=1)
 head(counts)
 colnames(counts)[1] 
 rownames(counts)
 dim(counts) # 158617 20 158617 is num of transcripts in Reference
-
+write.csv(counts, file="/Users/hajaramini/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.coutns.csv")
 #filter based on read count, assign group, normalize, design matrix
 hist(colSums(counts,na.rm=TRUE))
 colSums(counts,na.rm=TRUE)
 #general threshold
 colSums(counts,na.rm=TRUE) > 1000000 # all samples are true
-counts.low<-counts[colSums(counts,na.rm=TRUE) < 1000000],]
 counts.nolow <- counts[,colSums(counts,na.rm=TRUE) > 1000000]
 dim(counts.nolow) #all of samples has more than 1000000 counts
 #sample description
@@ -45,19 +44,21 @@ counts[is.na(counts)]<-0
 counts.small <-counts[rowSums(counts > 10) >= 3,] 
 dim(counts.small) #61234 20 
 dim(counts) #158617 20
-samples.small <- data.frame(file=colnames(counts.small),
-                      batch=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\1",colnames(counts.small))),
+write.csv(counts.small, file="/Users/hajaramini/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.coutns.small.csv") # use this for other analysis
+samples.small <- data.frame(file=colnames(counts.small),                     batch=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\1",colnames(counts.small))),
                       trt=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\2",colnames(counts.small))),
                     
                       genotype=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\3",colnames(counts.small)))) 
 head(samples.small)
-write.csv(counts.small, file="/Users/hajaramini/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.coutns.small.csv") # use this for next analysis
 save(samples.small,file="/Users/hajaramini/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.samples.small.Rdata")
 #assign group by combining all the experimental factors into one combined factor
 Genotype<-levels(samples.small$genotype)
 samples.small$group <- paste(samples.small$genotype,samples.small$trt,samples.small$batch,sep=".")
 samples.small$genotype<-as.character(samples.small$genotype)
+```
+
 #install.packages("edgeR")
+```{r}
 library(edgeR)
 dge <- DGEList(counts=counts.small, group=samples.small$group) 
 length(colnames(counts.small)) # 20
@@ -85,7 +86,11 @@ dev.copy(png,'BCV.png')
 mds.dge <- plotMDS(dge, method = "bcv",labels = dge$samples$group)
 dge.fit <- glmFit(dge, design1)
 colnames(dge.fit)
+```
+
 #To find genes that are differentially expressed in gt 2 & 6 vs 3
+
+```{r}
 dge.lrt <- glmLRT(dge.fit,coef = c("genotype2","genotype6"))
 #the top 10 most differentially expressed genes
 topTags(dge.lrt)
@@ -110,8 +115,8 @@ rownames(DEGs1) <- c("down", "no", "up")
 DEGs1 <- DEGs1[c("down", "up"),]
 DEGs1
 save(DEGs1, file="/Users/hajaramini/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEGs1.Rdata")
-#library(reshape2)
-#library(ggplot2)
+library(reshape2)
+library(ggplot2)
 DEGs1.melt <- melt(DEGs1)
 DEGs1.melt$DE <- rep(c("down", "up"), 2)
 colnames(DEGs1.melt) <- c("genotype", "number", "DE")
@@ -131,8 +136,11 @@ p.DEGs1 <- p.DEGs1 + geom_bar(mapping = aes(fill=DE, x = factor(DE), y = number)
 p.DEGs1 <- p.DEGs1 + labs(y = "number of differentially expressed genes", x = "")
 p.DEGs1
 ggsave(p.DEGs1, file="/Users/hajaramini/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG1.png")
+```
 
 #To find genes that are differentially expressed in trt S, F & L vs R 
+
+```{r}
 dge.lrt.trt <- glmLRT(dge.fit,coef = c("trtF","trtL", "trtS"))
 #the top 10 most differentially expressed genes
 topTags(dge.lrt.trt)
@@ -142,6 +150,11 @@ DEgenes2 <- topTags(dge.lrt.trt,n = Inf)$table[topTags(dge.lrt.trt,n = Inf)$tabl
 dim(DEgenes2) #15386 7
 colnames(DEgenes2)
 head(DEgenes2)
+#create .txt file for creating gff3
+names <- rownames(DEgenes2[1:1000,])
+names <- paste0("<",names)
+names <- data.frame(names)
+write.table(names, "top_transcripts.txt", col.names = F, row.names = F, quote = F)
 #To find genes that are differentially expressed in trt S, F & L vs R seperately
 dge.lrt.trtF <- glmLRT(dge.fit,coef = c("trtF"))
 topTags(dge.lrt.trtF)
@@ -180,4 +193,6 @@ p.DEGs2 <- p.DEGs2 + geom_bar(mapping = aes(fill=DE, x = factor(DE), y = number)
 p.DEGs2 <- p.DEGs2 + facet_grid(~genotype) 
 p.DEGs2 <- p.DEGs2 + labs(y = "number of differentially expressed genes", x = "")
 p.DEGs2
-ggsave(p.DEGs12, file="/Users/hajaramini/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG2.png")
+ggsave(p.DEGs2, file="/Users/hajaramini/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG2.png")
+
+```
