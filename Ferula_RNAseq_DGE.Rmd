@@ -198,7 +198,13 @@ ggsave(p.DEGs2, file="/Users/hajaramini/Ferula_RNAseq_Rbased/output/Ferula_RNAse
 ```
 
 #working with results of transdecoder to find best hit for 1000 DEgenes based on uniref90 .tab.gz file is the result of uniprof90)
+<<<<<<< HEAD
 ```{r}
 genes <- read.delim("~/Downloads/uniprot-yourlist%3AM20170612AAFB7E4D2F1D05654627429E83DA5CCEB9AC09P.tab.gz")
 unique(genes$Protein.names)
 ```
+=======
+
+genes <- read.delim("~/Downloads/uniprot-yourlist%3AM20170612AAFB7E4D2F1D05654627429E83DA5CCEB9AC09P.tab.gz")
+unique(genes$Protein.names)
+>>>>>>> a05dc81015313e035d3f60c51bbcf9284b9c702c
