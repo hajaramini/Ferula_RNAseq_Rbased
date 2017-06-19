@@ -225,3 +225,4 @@ sed -e "s/;/,/g" | sed -e "s/^.*	//" | #Change semicolons to commas
 sed -e "s/^[a-zA-Z,]*\[/\[/" | #Remove all characters from start of line until "[" is reached
 sed -e "s/,[a-zA-Z,-]*\[/\[/g" | # Remove all characters after a comma, until "["
 sed -e "s/^[a-zA-Z,-]*\[/\[/" > bad
+s
