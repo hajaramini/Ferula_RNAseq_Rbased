@@ -3,28 +3,26 @@ title: "Ferula_RNAseq_DEG"
 author: "Hajar"
 date: "June 8, 2017"
 output:
-  pdf_document: default
   html_document:
     keep_md: yes
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 #import data
+
 ```{r}
-counts <- read.csv ("/Users/hajaramini/Ferula_RNAseq_Rbased/input/combined_counts.csv", header=T, check.names = F) 
-head(counts)
-colnames(counts)
-rownames(counts)
-# make the 1st column as rownames
-counts <- read.csv("/Users/hajaramini/Ferula_RNAseq_Rbased/input/combined_counts.csv", header=T, row.names="target_id")
-head(counts)
-colnames(counts)[1] 
-rownames(counts)
+counts <- read.csv("~/Documents/Ferula_RNAseq_Rbased/input/combined_counts.csv", header=T, row.names="target_id")
+#head(counts)
+#colnames(counts)[1] 
+#rownames(counts)
 dim(counts) # 158617 20 158617 is num of transcripts in Reference
-write.csv(counts, file="/Users/hajaramini/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.coutns.csv")
+write.csv(counts, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.coutns.csv")
+```
 #filter based on read count, assign group, normalize, design matrix
+```{r}
 hist(colSums(counts,na.rm=TRUE))
 colSums(counts,na.rm=TRUE)
 #general threshold
@@ -45,13 +43,13 @@ counts[is.na(counts)]<-0
 counts.small <-counts[rowSums(counts > 10) >= 3,] 
 dim(counts.small) #61234 20 
 dim(counts) #158617 20
-write.csv(counts.small, file="/Users/hajaramini/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.coutns.small.csv") # use this for other analysis
+write.csv(counts.small, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.coutns.small.csv") # use this for other analysis
 samples.small <- data.frame(file=colnames(counts.small),                     batch=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\1",colnames(counts.small))),
                       trt=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\2",colnames(counts.small))),
                     
                       genotype=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\3",colnames(counts.small)))) 
 head(samples.small)
-save(samples.small,file="/Users/hajaramini/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.samples.small.Rdata")
+save(samples.small,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.samples.small.Rdata")
 #assign group by combining all the experimental factors into one combined factor
 Genotype<-levels(samples.small$genotype)
 samples.small$group <- paste(samples.small$genotype,samples.small$trt,samples.small$batch,sep=".")
@@ -81,12 +79,12 @@ colnames(design1)
 dge <- estimateGLMCommonDisp(dge,design1, verbose = T) #Disp = 0.84667, BCV =  0.9201 
 dge <- estimateGLMTrendedDisp(dge,design1)
 dge <- estimateGLMTagwiseDisp(dge,design1)
-save(dge,file="/Users/hajaramini/Ferula_RNAseq_Rbased/output/dge.Rdata")
+save(dge,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/dge.Rdata")
 plotBCV(dge)
 dev.copy(png,'BCV.png')
 mds.dge <- plotMDS(dge, method = "bcv",labels = dge$samples$group)
 dge.fit <- glmFit(dge, design1)
-colnames(dge.fit)
+#colnames(dge.fit)
 ```
 
 #To find genes that are differentially expressed in gt 2 & 6 vs 3
@@ -94,28 +92,28 @@ colnames(dge.fit)
 ```{r}
 dge.lrt <- glmLRT(dge.fit,coef = c("genotype2","genotype6"))
 #the top 10 most differentially expressed genes
-topTags(dge.lrt)
+#topTags(dge.lrt)
 #summary(decideTestsDGE(dge.lrt,p=0.05)) why error?
 #Extract genes with a FDR < 0.01 (could also use 0.05)
 DEgenes1 <- topTags(dge.lrt,n = Inf)$table[topTags(dge.lrt,n = Inf)$table$FDR<0.05,]
 dim(DEgenes1) #2874    6
 colnames(DEgenes1)
-head(DEgenes1)
+#head(DEgenes1)
 #save to a file
-write.csv(DEgenes1,file="/Users/hajaramini/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEgenes1.csv")
+write.csv(DEgenes1,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEgenes1.csv")
 #To find genes that are differentially expressed in gt 2 & 6 vs 3 seperately
 dge.lrt.gt2 <- glmLRT(dge.fit,coef = c("genotype2"))
-topTags(dge.lrt.gt2)
+#topTags(dge.lrt.gt2)
 summary(decideTestsDGE(dge.lrt.gt2, p=0.05))
 dge.lrt.gt6 <- glmLRT(dge.fit,coef = c("genotype6"))
-topTags(dge.lrt.gt6)
+#topTags(dge.lrt.gt6)
 summary(decideTestsDGE(dge.lrt.gt6, p=0.05))
 DEGs1 <- data.frame ("gt2" = as.data.frame(summary(decideTestsDGE(dge.lrt.gt2, p=0.05)))$Freq,
                                      "gt6" = as.data.frame(summary(decideTestsDGE(dge.lrt.gt6, p=0.05)))$Freq)
 rownames(DEGs1) <- c("down", "no", "up")
 DEGs1 <- DEGs1[c("down", "up"),]
 DEGs1
-save(DEGs1, file="/Users/hajaramini/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEGs1.Rdata")
+save(DEGs1, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEGs1.Rdata")
 library(reshape2)
 library(ggplot2)
 DEGs1.melt <- melt(DEGs1)
@@ -136,7 +134,7 @@ p.DEGs1 <- p.DEGs1 + geom_bar(mapping = aes(fill=DE, x = factor(DE), y = number)
 #p.DEGs1 <- p.DEGs1 + facet_grid(~genotype) 
 p.DEGs1 <- p.DEGs1 + labs(y = "number of differentially expressed genes", x = "")
 p.DEGs1
-ggsave(p.DEGs1, file="/Users/hajaramini/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG1.png")
+ggsave(p.DEGs1, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG1.png")
 ```
 
 #To find genes that are differentially expressed in trt S, F & L vs R 
@@ -144,12 +142,12 @@ ggsave(p.DEGs1, file="/Users/hajaramini/Ferula_RNAseq_Rbased/output/Ferula_RNAse
 ```{r}
 dge.lrt.trt <- glmLRT(dge.fit,coef = c("trtF","trtL", "trtS"))
 #the top 10 most differentially expressed genes
-topTags(dge.lrt.trt)
+#topTags(dge.lrt.trt)
 #summary(decideTestsDGE(dge.lrt,p=0.05)) why error?
 #Extract genes with a FDR < 0.01 (could also use 0.05)
 DEgenes2 <- topTags(dge.lrt.trt,n = Inf)$table[topTags(dge.lrt.trt,n = Inf)$table$FDR<0.05,]
 dim(DEgenes2) #15386 7
-colnames(DEgenes2)
+#colnames(DEgenes2)
 head(DEgenes2)
 #create .txt file for creating gff3
 names <- rownames(DEgenes2[1:1000,])
@@ -158,13 +156,13 @@ names <- data.frame(names)
 write.table(names, "top_transcripts.txt", col.names = F, row.names = F, quote = F)
 #To find genes that are differentially expressed in trt S, F & L vs R seperately
 dge.lrt.trtF <- glmLRT(dge.fit,coef = c("trtF"))
-topTags(dge.lrt.trtF)
+#topTags(dge.lrt.trtF)
 summary(decideTestsDGE(dge.lrt.trtF, p=0.05))
 dge.lrt.trtL <- glmLRT(dge.fit,coef = c("trtL"))
-topTags(dge.lrt.trtL)
+#topTags(dge.lrt.trtL)
 summary(decideTestsDGE(dge.lrt.trtL, p=0.05))
 dge.lrt.trtS <- glmLRT(dge.fit,coef = c("trtS"))
-topTags(dge.lrt.trtS)
+#topTags(dge.lrt.trtS)
 summary(decideTestsDGE(dge.lrt.trtS, p=0.05))
 
 DEGs2 <- data.frame ("trtF" = as.data.frame(summary(decideTestsDGE(dge.lrt.trtF, p=0.05)))$Freq,
@@ -173,7 +171,7 @@ DEGs2 <- data.frame ("trtF" = as.data.frame(summary(decideTestsDGE(dge.lrt.trtF,
 rownames(DEGs2) <- c("down", "no", "up")
 DEGs2 <- DEGs2[c("down", "up"),]
 DEGs2
-save(DEGs2, file="/Users/hajaramini/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEGs2.Rdata")
+save(DEGs2, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEGs2.Rdata")
 #library(reshape2)
 #library(ggplot2)
 DEGs2.melt <- melt(DEGs2)
@@ -194,35 +192,9 @@ p.DEGs2 <- p.DEGs2 + geom_bar(mapping = aes(fill=DE, x = factor(DE), y = number)
 p.DEGs2 <- p.DEGs2 + facet_grid(~genotype) 
 p.DEGs2 <- p.DEGs2 + labs(y = "number of differentially expressed genes", x = "")
 p.DEGs2
-ggsave(p.DEGs2, file="/Users/hajaramini/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG2.png")
+ggsave(p.DEGs2, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG2.png")
 
 ```
 
 #working with results of transdecoder to find best hit for 1000 DEgenes based on uniref90 .tab.gz file is the result of uniprof90)
 
-```{r}
-genes <- read.delim("~/Downloads/uniprot-yourlist%3AM20170612AAFB7E4D2F1D05654627429E83DA5CCEB9AC09P.tab.gz")
-unique(genes$Protein.names)
-```
-
-```{r}
-library(tidyverse)
-GO <- read_csv("GO_Terms.txt", col_names = F)
-Trans <- read_table2("transcript_names.txt", col_names = F)
-Trans$X1 <- sub("::.*","",Trans$X1)
-Trans$X2 <- sub("UniRef90_","",Trans$X2)
-
-New <- inner_join(Trans,GO, by = c("X2" = "X1"))
-New <- New[,-2]
-
-write_csv(New, "Genes_and_GO_Terms.tab", col_names = F)
-system("sed 's/NA//g' Genes_and_GO_Terms.tab | 
-        sed 's/,*$//' |
-        sed 's/,/\t/' > Genes_and_GO_Terms.tab")
-```
-sed -e "s/ //g" uniref_GO_terms.tab | #Removing all spaces
-sed -e "s/;/,/g" | sed -e "s/^.*	//" | #Change semicolons to commas
-sed -e "s/^[a-zA-Z,]*\[/\[/" | #Remove all characters from start of line until "[" is reached
-sed -e "s/,[a-zA-Z,-]*\[/\[/g" | # Remove all characters after a comma, until "["
-sed -e "s/^[a-zA-Z,-]*\[/\[/" > bad
-s
