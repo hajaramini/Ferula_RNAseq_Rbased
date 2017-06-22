@@ -14,12 +14,20 @@ knitr::opts_chunk$set(echo = TRUE)
 #import data
 
 ```{r}
-counts <- read.csv("~/Documents/Ferula_RNAseq_Rbased/input/combined_counts.csv", header=T, row.names="target_id")
-#head(counts)
+counts <- read.csv("~/Documents/Ferula_RNAseq_Rbased/input/combined_counts_V2.csv", header=T, row.names="target_id")
+#head(counts) for pooling two library of BR3 (they are not replication)
+counts$BR3.2 <- counts$BR3 + counts$BR3.1
+counts$BR3 <- NULL
+counts$BR3.1 <- NULL
+colnames(counts)[19] <- "BR3"
+counts$BF3.2 <- counts$BF3 + counts$BF3.1
+counts$BF3 <- NULL
+counts$BF3.1 <- NULL
+colnames(counts)[18] <- "BF3"
 #colnames(counts)[1] 
 #rownames(counts)
-dim(counts) # 158617 20 158617 is num of transcripts in Reference
-write.csv(counts, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.coutns.csv")
+dim(counts) # 158617 18 158617 is num of transcripts in Reference
+write.csv(counts, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.coutns_v2.csv")
 ```
 #filter based on read count, assign group, normalize, design matrix
 ```{r}
@@ -31,28 +39,28 @@ counts.nolow <- counts[,colSums(counts,na.rm=TRUE) > 1000000]
 dim(counts.nolow) #all of samples has more than 1000000 counts
 #sample description
 samples <- data.frame(file=colnames(counts),
-                      batch=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\1",colnames(counts))),
-                      trt=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\2",colnames(counts))),
+                      facility=factor(sub("(B|D|N)(S|F|L|R)(2|3|6)","\\1",colnames(counts))),
+                      trt=factor(sub("(B|D|N)(S|F|L|R)(2|3|6)","\\2",colnames(counts))),
                     
-                      genotype=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\3",colnames(counts)))) 
+                      genotype=factor(sub("(B|D|N)(S|F|L|R)(2|3|6)","\\3",colnames(counts)))) 
 head(samples) 
 
 #convert NA to zero
 counts[is.na(counts)]<-0
 # eliminating genes with low expression levels by retaining genes with > 10 reads in >= 3 samples
 counts.small <-counts[rowSums(counts > 10) >= 3,] 
-dim(counts.small) #61234 20 
-dim(counts) #158617 20
-write.csv(counts.small, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.coutns.small.csv") # use this for other analysis
-samples.small <- data.frame(file=colnames(counts.small),                     batch=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\1",colnames(counts.small))),
-                      trt=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\2",colnames(counts.small))),
+dim(counts.small) #61234 18 
+dim(counts) #158617 18
+write.csv(counts.small, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.coutns.small_v2.csv") # use this for other analysis
+samples.small <- data.frame(file=colnames(counts.small),                     facility=factor(sub("(B|D|N)(S|F|L|R)(2|3|6)","\\1",colnames(counts.small))),
+                      trt=factor(sub("(B|D|N)(S|F|L|R)(2|3|6)","\\2",colnames(counts.small))),
                     
-                      genotype=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\3",colnames(counts.small)))) 
+                      genotype=factor(sub("(B|D|N)(S|F|L|R)(2|3|6)","\\3",colnames(counts.small)))) 
 head(samples.small)
-save(samples.small,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.samples.small.Rdata")
+save(samples.small,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.samples.small_v2.Rdata")
 #assign group by combining all the experimental factors into one combined factor
 Genotype<-levels(samples.small$genotype)
-samples.small$group <- paste(samples.small$genotype,samples.small$trt,samples.small$batch,sep=".")
+samples.small$group <- paste(samples.small$genotype,samples.small$trt,samples.small$facility,sep=".")
 samples.small$genotype<-as.character(samples.small$genotype)
 ```
 
@@ -63,7 +71,7 @@ dge <- DGEList(counts=counts.small, group=samples.small$group)
 length(colnames(counts.small)) # 20
 dge<-calcNormFactors(dge, method = "TMM")
 # look at the normalization factors
-nrow(dge$samples) # 20 
+nrow(dge$samples) # 18 
 hist(dge$samples[,3]) # norm.factor > 3 seem outlier? I don't want to remove sample 
 plot(log10(dge$sample[,"lib.size"]),dge$sample[,"norm.factors"]) 
 #when we want to change the ref from first icon to others
@@ -73,13 +81,13 @@ samples.small$trt <- as.factor(samples.small$trt)
 samples.small$trt <- relevel(samples.small$trt,ref="R")
 
 #design model for each factor (genotype & trt factors)
-design1 <- model.matrix(~genotype+trt + batch, data=samples.small)
+design1 <- model.matrix(~genotype+trt + facility, data=samples.small)
 colnames(design1)
 #First the overall dispersion
-dge <- estimateGLMCommonDisp(dge,design1, verbose = T) #Disp = 0.84667, BCV =  0.9201 
+dge <- estimateGLMCommonDisp(dge,design1, verbose = T) #Disp = 1.15 , BCV =  1.076 
 dge <- estimateGLMTrendedDisp(dge,design1)
 dge <- estimateGLMTagwiseDisp(dge,design1)
-save(dge,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/dge.Rdata")
+save(dge,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/dge_v2.Rdata")
 plotBCV(dge)
 dev.copy(png,'BCV.png')
 mds.dge <- plotMDS(dge, method = "bcv",labels = dge$samples$group)
@@ -96,11 +104,11 @@ dge.lrt <- glmLRT(dge.fit,coef = c("genotype2","genotype6"))
 #summary(decideTestsDGE(dge.lrt,p=0.05)) why error?
 #Extract genes with a FDR < 0.01 (could also use 0.05)
 DEgenes1 <- topTags(dge.lrt,n = Inf)$table[topTags(dge.lrt,n = Inf)$table$FDR<0.05,]
-dim(DEgenes1) #2874    6
+dim(DEgenes1) #2096   6
 colnames(DEgenes1)
 #head(DEgenes1)
 #save to a file
-write.csv(DEgenes1,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEgenes1.csv")
+write.csv(DEgenes1,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEgenes1_v2.csv")
 #To find genes that are differentially expressed in gt 2 & 6 vs 3 seperately
 dge.lrt.gt2 <- glmLRT(dge.fit,coef = c("genotype2"))
 #topTags(dge.lrt.gt2)
@@ -113,7 +121,7 @@ DEGs1 <- data.frame ("gt2" = as.data.frame(summary(decideTestsDGE(dge.lrt.gt2, p
 rownames(DEGs1) <- c("down", "no", "up")
 DEGs1 <- DEGs1[c("down", "up"),]
 DEGs1
-save(DEGs1, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEGs1.Rdata")
+save(DEGs1, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEGs1_v2.Rdata")
 library(reshape2)
 library(ggplot2)
 DEGs1.melt <- melt(DEGs1)
@@ -127,6 +135,8 @@ DEGs1.melt
 DEGs1.melt$gt <- gsub("(X)(\\.)(S|L|F)(\\.)", "\\1",DEGs1.melt$genotype)
 
 DEGs1.melt$trt <- gsub("(X)(\\.)(R|S|L|F)(\\.)", "\\2",DEGs1.melt$genotype)
+
+
 ### making ggplot for DEGs
 library(ggplot2)
 p.DEGs1 <- ggplot(data = DEGs1.melt)
@@ -134,7 +144,7 @@ p.DEGs1 <- p.DEGs1 + geom_bar(mapping = aes(fill=DE, x = factor(DE), y = number)
 #p.DEGs1 <- p.DEGs1 + facet_grid(~genotype) 
 p.DEGs1 <- p.DEGs1 + labs(y = "number of differentially expressed genes", x = "")
 p.DEGs1
-ggsave(p.DEGs1, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG1.png")
+ggsave(p.DEGs1, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG1_v2.png")
 ```
 
 #To find genes that are differentially expressed in trt S, F & L vs R 
@@ -146,7 +156,8 @@ dge.lrt.trt <- glmLRT(dge.fit,coef = c("trtF","trtL", "trtS"))
 #summary(decideTestsDGE(dge.lrt,p=0.05)) why error?
 #Extract genes with a FDR < 0.01 (could also use 0.05)
 DEgenes2 <- topTags(dge.lrt.trt,n = Inf)$table[topTags(dge.lrt.trt,n = Inf)$table$FDR<0.05,]
-dim(DEgenes2) #15386 7
+write.csv(DEgenes2,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEgenes1_v2.csv")
+dim(DEgenes2) #20140 7
 #colnames(DEgenes2)
 head(DEgenes2)
 #create .txt file for creating gff3
@@ -154,6 +165,12 @@ names <- rownames(DEgenes2[1:1000,])
 names <- paste0("<",names)
 names <- data.frame(names)
 write.table(names, "top_transcripts.txt", col.names = F, row.names = F, quote = F)
+
+#for all DE genes
+names2 <-rownames(DEgenes2)
+names2 <- paste0("<",names2)
+names2 <- data.frame(names2)
+write.table(names, "All_transcripts.txt", col.names = F, row.names = F, quote = F)
 #To find genes that are differentially expressed in trt S, F & L vs R seperately
 dge.lrt.trtF <- glmLRT(dge.fit,coef = c("trtF"))
 #topTags(dge.lrt.trtF)
@@ -171,7 +188,7 @@ DEGs2 <- data.frame ("trtF" = as.data.frame(summary(decideTestsDGE(dge.lrt.trtF,
 rownames(DEGs2) <- c("down", "no", "up")
 DEGs2 <- DEGs2[c("down", "up"),]
 DEGs2
-save(DEGs2, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEGs2.Rdata")
+save(DEGs2, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEGs2_v2.Rdata")
 #library(reshape2)
 #library(ggplot2)
 DEGs2.melt <- melt(DEGs2)
@@ -192,34 +209,7 @@ p.DEGs2 <- p.DEGs2 + geom_bar(mapping = aes(fill=DE, x = factor(DE), y = number)
 p.DEGs2 <- p.DEGs2 + facet_grid(~genotype) 
 p.DEGs2 <- p.DEGs2 + labs(y = "number of differentially expressed genes", x = "")
 p.DEGs2
-ggsave(p.DEGs2, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG2.png")
+ggsave(p.DEGs2, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG2_v2.png")
 
 ```
-
-#working with results of transdecoder to find best hit for 1000 DEgenes based on uniref90 .tab.gz file is the result of uniprof90)
-library(tidyverse)
-GO <- read_csv("GO_Term.txt", col_names = F)
-Trans <- read_table2("transcript_names.txt", col_names = F)
-Trans$X1 <- sub("::.*","",Trans$X1)
-Trans$X2 <- sub("UniRef90_","",Trans$X2)
-
-New <- inner_join(Trans,GO, by = c("X2" = "X1"))
-New <- New[,-2]
-
-write_csv(New, "Genes_and_Terms.tab" , col_names =F)
-system("sed 's/NA//g' Genes_and_GO_Terms.tab |            
-        sed 's/,/\t/' > Gene_and_GO_Terms.tab")
-        
-#062017 Working for creating S9 file like in BIS180L
-library(tidyverse)
-temp <- read_delim("uniref_GO_terms.tab", "\t", col_names = F)
-temp$X2 <- gsub("\\[GO:[0-9]{7}\\]","",temp$X2)
-temp$X2 <- gsub(";","/",temp$X2)
-trans <- read_delim("transcript_names.txt", "\t", col_names = F)
-trans$X1 <- sub("::.*","",trans$X1)
-trans$X2 <- sub("UniRef90_","",trans$X2)
-combined <- merge(trans,temp, by.x = "X2", by.y = "X1")
-combined$X2 <- sub(" $","",combined$X2)
-write.table(combined, "Genes_and_Terms.tab", sep = "\t", row.names = F, col.names = F, quote = F)
-
 

@@ -7,19 +7,27 @@ June 8, 2017
 
 
 ```r
-counts <- read.csv("~/Documents/Ferula_RNAseq_Rbased/input/combined_counts.csv", header=T, row.names="target_id")
-#head(counts)
+counts <- read.csv("~/Documents/Ferula_RNAseq_Rbased/input/combined_counts_V2.csv", header=T, row.names="target_id")
+#head(counts) for pooling two library of BR3 (they are not replication)
+counts$BR3.2 <- counts$BR3 + counts$BR3.1
+counts$BR3 <- NULL
+counts$BR3.1 <- NULL
+colnames(counts)[19] <- "BR3"
+counts$BF3.2 <- counts$BF3 + counts$BF3.1
+counts$BF3 <- NULL
+counts$BF3.1 <- NULL
+colnames(counts)[18] <- "BF3"
 #colnames(counts)[1] 
 #rownames(counts)
-dim(counts) # 158617 20 158617 is num of transcripts in Reference
+dim(counts) # 158617 18 158617 is num of transcripts in Reference
 ```
 
 ```
-## [1] 158617     20
+## [1] 158617     18
 ```
 
 ```r
-write.csv(counts, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.coutns.csv")
+write.csv(counts, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.coutns_v2.csv")
 ```
 #filter based on read count, assign group, normalize, design matrix
 
@@ -34,12 +42,12 @@ colSums(counts,na.rm=TRUE)
 ```
 
 ```
-##      AS6      AF6      AL6      AR3      AS3      AF3      AL3      AR2 
+##      DS6      DF6      DL6      DR3      DS3      DF3      DL3      DR2 
 ## 22185775 22738489 20446520 21387648 19793593  9549581 22938854 17169702 
-##      AS2      AF2      AL2      AR6      BF3      BF6      BR3      BR6 
+##      DS2      DF2      DL2      DR6      NF3      NF6      NR3      NR6 
 ## 26336386 21407169 14960410 21625910 20917468 17632293 20384896 16792343 
-##      CR3      DR3      CF3      DF3 
-##  7584621  7373593  7510046  7272516
+##      BR3      BF3 
+## 14958214 14782562
 ```
 
 ```r
@@ -48,10 +56,10 @@ colSums(counts,na.rm=TRUE) > 1000000 # all samples are true
 ```
 
 ```
-##  AS6  AF6  AL6  AR3  AS3  AF3  AL3  AR2  AS2  AF2  AL2  AR6  BF3  BF6  BR3 
+##  DS6  DF6  DL6  DR3  DS3  DF3  DL3  DR2  DS2  DF2  DL2  DR6  NF3  NF6  NR3 
 ## TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE 
-##  BR6  CR3  DR3  CF3  DF3 
-## TRUE TRUE TRUE TRUE TRUE
+##  NR6  BR3  BF3 
+## TRUE TRUE TRUE
 ```
 
 ```r
@@ -60,27 +68,27 @@ dim(counts.nolow) #all of samples has more than 1000000 counts
 ```
 
 ```
-## [1] 158617     20
+## [1] 158617     18
 ```
 
 ```r
 #sample description
 samples <- data.frame(file=colnames(counts),
-                      batch=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\1",colnames(counts))),
-                      trt=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\2",colnames(counts))),
+                      facility=factor(sub("(B|D|N)(S|F|L|R)(2|3|6)","\\1",colnames(counts))),
+                      trt=factor(sub("(B|D|N)(S|F|L|R)(2|3|6)","\\2",colnames(counts))),
                     
-                      genotype=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\3",colnames(counts)))) 
+                      genotype=factor(sub("(B|D|N)(S|F|L|R)(2|3|6)","\\3",colnames(counts)))) 
 head(samples) 
 ```
 
 ```
-##   file batch trt genotype
-## 1  AS6     A   S        6
-## 2  AF6     A   F        6
-## 3  AL6     A   L        6
-## 4  AR3     A   R        3
-## 5  AS3     A   S        3
-## 6  AF3     A   F        3
+##   file facility trt genotype
+## 1  DS6        D   S        6
+## 2  DF6        D   F        6
+## 3  DL6        D   L        6
+## 4  DR3        D   R        3
+## 5  DS3        D   S        3
+## 6  DF3        D   F        3
 ```
 
 ```r
@@ -88,45 +96,45 @@ head(samples)
 counts[is.na(counts)]<-0
 # eliminating genes with low expression levels by retaining genes with > 10 reads in >= 3 samples
 counts.small <-counts[rowSums(counts > 10) >= 3,] 
-dim(counts.small) #61234 20 
+dim(counts.small) #61234 18 
 ```
 
 ```
-## [1] 61234    20
-```
-
-```r
-dim(counts) #158617 20
-```
-
-```
-## [1] 158617     20
+## [1] 62147    18
 ```
 
 ```r
-write.csv(counts.small, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.coutns.small.csv") # use this for other analysis
-samples.small <- data.frame(file=colnames(counts.small),                     batch=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\1",colnames(counts.small))),
-                      trt=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\2",colnames(counts.small))),
+dim(counts) #158617 18
+```
+
+```
+## [1] 158617     18
+```
+
+```r
+write.csv(counts.small, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.coutns.small_v2.csv") # use this for other analysis
+samples.small <- data.frame(file=colnames(counts.small),                     facility=factor(sub("(B|D|N)(S|F|L|R)(2|3|6)","\\1",colnames(counts.small))),
+                      trt=factor(sub("(B|D|N)(S|F|L|R)(2|3|6)","\\2",colnames(counts.small))),
                     
-                      genotype=factor(sub("(A|B|C|D)(S|F|L|R)(2|3|6)","\\3",colnames(counts.small)))) 
+                      genotype=factor(sub("(B|D|N)(S|F|L|R)(2|3|6)","\\3",colnames(counts.small)))) 
 head(samples.small)
 ```
 
 ```
-##   file batch trt genotype
-## 1  AS6     A   S        6
-## 2  AF6     A   F        6
-## 3  AL6     A   L        6
-## 4  AR3     A   R        3
-## 5  AS3     A   S        3
-## 6  AF3     A   F        3
+##   file facility trt genotype
+## 1  DS6        D   S        6
+## 2  DF6        D   F        6
+## 3  DL6        D   L        6
+## 4  DR3        D   R        3
+## 5  DS3        D   S        3
+## 6  DF3        D   F        3
 ```
 
 ```r
-save(samples.small,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.samples.small.Rdata")
+save(samples.small,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.samples.small_v2.Rdata")
 #assign group by combining all the experimental factors into one combined factor
 Genotype<-levels(samples.small$genotype)
-samples.small$group <- paste(samples.small$genotype,samples.small$trt,samples.small$batch,sep=".")
+samples.small$group <- paste(samples.small$genotype,samples.small$trt,samples.small$facility,sep=".")
 samples.small$genotype<-as.character(samples.small$genotype)
 ```
 
@@ -146,17 +154,17 @@ length(colnames(counts.small)) # 20
 ```
 
 ```
-## [1] 20
+## [1] 18
 ```
 
 ```r
 dge<-calcNormFactors(dge, method = "TMM")
 # look at the normalization factors
-nrow(dge$samples) # 20 
+nrow(dge$samples) # 18 
 ```
 
 ```
-## [1] 20
+## [1] 18
 ```
 
 ```r
@@ -179,28 +187,28 @@ samples.small$trt <- as.factor(samples.small$trt)
 samples.small$trt <- relevel(samples.small$trt,ref="R")
 
 #design model for each factor (genotype & trt factors)
-design1 <- model.matrix(~genotype+trt + batch, data=samples.small)
+design1 <- model.matrix(~genotype+trt + facility, data=samples.small)
 colnames(design1)
 ```
 
 ```
 ## [1] "(Intercept)" "genotype2"   "genotype6"   "trtF"        "trtL"       
-## [6] "trtS"        "batchB"      "batchC"      "batchD"
+## [6] "trtS"        "facilityD"   "facilityN"
 ```
 
 ```r
 #First the overall dispersion
-dge <- estimateGLMCommonDisp(dge,design1, verbose = T) #Disp = 0.84667, BCV =  0.9201 
+dge <- estimateGLMCommonDisp(dge,design1, verbose = T) #Disp = 1.15 , BCV =  1.076 
 ```
 
 ```
-## Disp = 0.84667 , BCV = 0.9201
+## Disp = 0.89357 , BCV = 0.9453
 ```
 
 ```r
 dge <- estimateGLMTrendedDisp(dge,design1)
 dge <- estimateGLMTagwiseDisp(dge,design1)
-save(dge,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/dge.Rdata")
+save(dge,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/dge_v2.Rdata")
 plotBCV(dge)
 ```
 
@@ -231,11 +239,11 @@ dge.lrt <- glmLRT(dge.fit,coef = c("genotype2","genotype6"))
 #summary(decideTestsDGE(dge.lrt,p=0.05)) why error?
 #Extract genes with a FDR < 0.01 (could also use 0.05)
 DEgenes1 <- topTags(dge.lrt,n = Inf)$table[topTags(dge.lrt,n = Inf)$table$FDR<0.05,]
-dim(DEgenes1) #2874    6
+dim(DEgenes1) #2096   6
 ```
 
 ```
-## [1] 2861    6
+## [1] 2700    6
 ```
 
 ```r
@@ -250,7 +258,7 @@ colnames(DEgenes1)
 ```r
 #head(DEgenes1)
 #save to a file
-write.csv(DEgenes1,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEgenes1.csv")
+write.csv(DEgenes1,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEgenes1_v2.csv")
 #To find genes that are differentially expressed in gt 2 & 6 vs 3 seperately
 dge.lrt.gt2 <- glmLRT(dge.fit,coef = c("genotype2"))
 #topTags(dge.lrt.gt2)
@@ -259,9 +267,9 @@ summary(decideTestsDGE(dge.lrt.gt2, p=0.05))
 
 ```
 ##    [,1] 
-## -1   535
-## 0  60404
-## 1    295
+## -1   455
+## 0  61406
+## 1    286
 ```
 
 ```r
@@ -272,9 +280,9 @@ summary(decideTestsDGE(dge.lrt.gt6, p=0.05))
 
 ```
 ##    [,1] 
-## -1   948
-## 0  59686
-## 1    600
+## -1   903
+## 0  60640
+## 1    604
 ```
 
 ```r
@@ -287,12 +295,12 @@ DEGs1
 
 ```
 ##      gt2 gt6
-## down 535 948
-## up   295 600
+## down 455 903
+## up   286 604
 ```
 
 ```r
-save(DEGs1, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEGs1.Rdata")
+save(DEGs1, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEGs1_v2.Rdata")
 library(reshape2)
 ```
 
@@ -324,10 +332,10 @@ DEGs1.melt
 
 ```
 ##   genotype number   DE
-## 1      gt2    535 down
-## 2      gt2    295   up
-## 3      gt6    948 down
-## 4      gt6    600   up
+## 1      gt2    455 down
+## 2      gt2    286   up
+## 3      gt6    903 down
+## 4      gt6    604   up
 ```
 
 ```r
@@ -339,16 +347,18 @@ DEGs1.melt
 
 ```
 ##   genotype number   DE
-## 2      gt2    295   up
-## 4      gt6    600   up
-## 1      gt2    535 down
-## 3      gt6    948 down
+## 2      gt2    286   up
+## 4      gt6    604   up
+## 1      gt2    455 down
+## 3      gt6    903 down
 ```
 
 ```r
 DEGs1.melt$gt <- gsub("(X)(\\.)(S|L|F)(\\.)", "\\1",DEGs1.melt$genotype)
 
 DEGs1.melt$trt <- gsub("(X)(\\.)(R|S|L|F)(\\.)", "\\2",DEGs1.melt$genotype)
+
+
 ### making ggplot for DEGs
 library(ggplot2)
 p.DEGs1 <- ggplot(data = DEGs1.melt)
@@ -361,7 +371,7 @@ p.DEGs1
 ![](Ferula_RNAseq_DGE_files/figure-html/unnamed-chunk-4-1.png)<!-- -->
 
 ```r
-ggsave(p.DEGs1, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG1.png")
+ggsave(p.DEGs1, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG1_v2.png")
 ```
 
 ```
@@ -378,11 +388,12 @@ dge.lrt.trt <- glmLRT(dge.fit,coef = c("trtF","trtL", "trtS"))
 #summary(decideTestsDGE(dge.lrt,p=0.05)) why error?
 #Extract genes with a FDR < 0.01 (could also use 0.05)
 DEgenes2 <- topTags(dge.lrt.trt,n = Inf)$table[topTags(dge.lrt.trt,n = Inf)$table$FDR<0.05,]
-dim(DEgenes2) #15386 7
+write.csv(DEgenes2,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEgenes1_v2.csv")
+dim(DEgenes2) #20140 7
 ```
 
 ```
-## [1] 15303     7
+## [1] 12687     7
 ```
 
 ```r
@@ -392,19 +403,19 @@ head(DEgenes2)
 
 ```
 ##                          logFC.trtF logFC.trtL logFC.trtS   logCPM
-## TRINITY_DN21262_c0_g1_i2   9.100753 -2.0823750 -2.8465902 4.534528
-## TRINITY_DN59790_c0_g1_i1   9.173253  1.4749214  2.0529539 3.347438
-## TRINITY_DN15353_c0_g2_i1  10.170347  1.0163668  0.6561966 3.907797
-## TRINITY_DN13576_c0_g1_i1  10.175140  4.0435133  2.1223862 4.971981
-## TRINITY_DN67795_c0_g1_i1  10.880014  5.3814900  0.8512816 3.342686
-## TRINITY_DN32850_c0_g3_i1   9.776427 -0.6073935 -1.1082484 2.268522
+## TRINITY_DN59790_c0_g1_i1   8.990086  1.5099392  1.8899683 2.964240
+## TRINITY_DN15353_c0_g2_i1  10.000930  1.0079972  0.4142302 3.419545
+## TRINITY_DN67795_c0_g1_i1  10.819517  5.5040013  0.7663922 3.058659
+## TRINITY_DN21262_c0_g1_i2   8.891950 -2.5158477 -3.2335133 4.173338
+## TRINITY_DN13576_c0_g1_i1   9.763360  3.8651982  1.7732271 4.454639
+## TRINITY_DN32850_c0_g3_i1   9.708344 -0.7907408 -1.3949423 1.793940
 ##                                LR       PValue          FDR
-## TRINITY_DN21262_c0_g1_i2 202.0346 1.532970e-43 9.386986e-39
-## TRINITY_DN59790_c0_g1_i1 190.1768 5.590172e-41 1.711543e-36
-## TRINITY_DN15353_c0_g2_i1 183.6457 1.439209e-39 2.937617e-35
-## TRINITY_DN13576_c0_g1_i1 169.6562 1.509665e-36 2.311070e-32
-## TRINITY_DN67795_c0_g1_i1 166.7485 6.405970e-36 7.845263e-32
-## TRINITY_DN32850_c0_g3_i1 154.6382 2.631002e-33 2.685113e-29
+## TRINITY_DN59790_c0_g1_i1 147.6280 8.558943e-32 5.319126e-27
+## TRINITY_DN15353_c0_g2_i1 145.8443 2.075646e-31 6.449757e-27
+## TRINITY_DN67795_c0_g1_i1 140.4021 3.095758e-30 5.463040e-26
+## TRINITY_DN21262_c0_g1_i2 140.1456 3.516205e-30 5.463040e-26
+## TRINITY_DN13576_c0_g1_i1 132.9266 1.265682e-28 1.573167e-24
+## TRINITY_DN32850_c0_g3_i1 124.2949 9.168993e-27 9.497090e-23
 ```
 
 ```r
@@ -413,6 +424,12 @@ names <- rownames(DEgenes2[1:1000,])
 names <- paste0("<",names)
 names <- data.frame(names)
 write.table(names, "top_transcripts.txt", col.names = F, row.names = F, quote = F)
+
+#for all DE genes
+names2 <-rownames(DEgenes2)
+names2 <- paste0("<",names2)
+names2 <- data.frame(names2)
+write.table(names, "All_transcripts.txt", col.names = F, row.names = F, quote = F)
 #To find genes that are differentially expressed in trt S, F & L vs R seperately
 dge.lrt.trtF <- glmLRT(dge.fit,coef = c("trtF"))
 #topTags(dge.lrt.trtF)
@@ -421,9 +438,9 @@ summary(decideTestsDGE(dge.lrt.trtF, p=0.05))
 
 ```
 ##    [,1] 
-## -1  3041
-## 0  51777
-## 1   6416
+## -1  2271
+## 0  54876
+## 1   5000
 ```
 
 ```r
@@ -434,9 +451,9 @@ summary(decideTestsDGE(dge.lrt.trtL, p=0.05))
 
 ```
 ##    [,1] 
-## -1  4629
-## 0  53723
-## 1   2882
+## -1  3872
+## 0  55421
+## 1   2854
 ```
 
 ```r
@@ -447,9 +464,9 @@ summary(decideTestsDGE(dge.lrt.trtS, p=0.05))
 
 ```
 ##    [,1] 
-## -1   201
-## 0  60426
-## 1    607
+## -1   180
+## 0  61558
+## 1    409
 ```
 
 ```r
@@ -463,12 +480,12 @@ DEGs2
 
 ```
 ##      trtF trtL trtS
-## down 3041 4629  201
-## up   6416 2882  607
+## down 2271 3872  180
+## up   5000 2854  409
 ```
 
 ```r
-save(DEGs2, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEGs2.Rdata")
+save(DEGs2, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEGs2_v2.Rdata")
 #library(reshape2)
 #library(ggplot2)
 DEGs2.melt <- melt(DEGs2)
@@ -486,12 +503,12 @@ DEGs2.melt
 
 ```
 ##   genotype number   DE
-## 1     trtF   3041 down
-## 2     trtF   6416   up
-## 3     trtL   4629 down
-## 4     trtL   2882   up
-## 5     trtS    201 down
-## 6     trtS    607   up
+## 1     trtF   2271 down
+## 2     trtF   5000   up
+## 3     trtL   3872 down
+## 4     trtL   2854   up
+## 5     trtS    180 down
+## 6     trtS    409   up
 ```
 
 ```r
@@ -503,12 +520,12 @@ DEGs2.melt
 
 ```
 ##   genotype number   DE
-## 2     trtF   6416   up
-## 4     trtL   2882   up
-## 6     trtS    607   up
-## 1     trtF   3041 down
-## 3     trtL   4629 down
-## 5     trtS    201 down
+## 2     trtF   5000   up
+## 4     trtL   2854   up
+## 6     trtS    409   up
+## 1     trtF   2271 down
+## 3     trtL   3872 down
+## 5     trtS    180 down
 ```
 
 ```r
@@ -527,12 +544,10 @@ p.DEGs2
 ![](Ferula_RNAseq_DGE_files/figure-html/unnamed-chunk-5-1.png)<!-- -->
 
 ```r
-ggsave(p.DEGs2, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG2.png")
+ggsave(p.DEGs2, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG2_v2.png")
 ```
 
 ```
 ## Saving 7 x 5 in image
 ```
-
-#working with results of transdecoder to find best hit for 1000 DEgenes based on uniref90 .tab.gz file is the result of uniprof90)
 
