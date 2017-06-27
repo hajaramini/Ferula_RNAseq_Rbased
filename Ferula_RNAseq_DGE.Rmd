@@ -2,12 +2,11 @@
 title: "Ferula_RNAseq_DEG"
 author: "Hajar"
 date: "June 8, 2017"
-
+output: 
+  html_document: 
+    keep_md: yes
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 #import data
 
 ```{r}
@@ -157,17 +156,25 @@ write.csv(DEgenes2,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output
 dim(DEgenes2) #20140 7
 #colnames(DEgenes2)
 head(DEgenes2)
+```
+
+```{r}
 #create .txt file for creating gff3
 names <- rownames(DEgenes2[1:1000,])
 names <- paste0("<",names)
 names <- data.frame(names)
 write.table(names, "top_transcripts.txt", col.names = F, row.names = F, quote = F)
 
+
 #for all DE genes
 names2 <-rownames(DEgenes2)
 names2 <- paste0("<",names2)
 names2 <- data.frame(names2)
 write.table(names2, "All_transcripts.txt", col.names = F, row.names = F, quote = F)
+
+```
+
+```{r}
 #To find genes that are differentially expressed in trt S, F & L vs R seperately
 dge.lrt.trtF <- glmLRT(dge.fit,coef = c("trtF"))
 #topTags(dge.lrt.trtF)
@@ -199,6 +206,10 @@ DEGs2.melt
 DEGs2.melt$gt <- gsub("(X)(\\.)(S|L|F)(\\.)", "\\1",DEGs2.melt$genotype)
 
 DEGs2.melt$trt <- gsub("(X)(\\.)(S|L|F)(\\.)", "\\2",DEGs2.melt$genotype)
+```
+
+```{r}
+
 ### making ggplot for DEGs
 library(ggplot2)
 p.DEGs2 <- ggplot(data = DEGs2.melt)

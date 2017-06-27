@@ -2,7 +2,6 @@
 Hajar  
 June 8, 2017  
 
-
 #import data
 
 
@@ -418,6 +417,7 @@ head(DEgenes2)
 ## TRINITY_DN32850_c0_g3_i1 124.2949 9.168993e-27 9.497090e-23
 ```
 
+
 ```r
 #create .txt file for creating gff3
 names <- rownames(DEgenes2[1:1000,])
@@ -425,11 +425,16 @@ names <- paste0("<",names)
 names <- data.frame(names)
 write.table(names, "top_transcripts.txt", col.names = F, row.names = F, quote = F)
 
+
 #for all DE genes
 names2 <-rownames(DEgenes2)
 names2 <- paste0("<",names2)
 names2 <- data.frame(names2)
 write.table(names2, "All_transcripts.txt", col.names = F, row.names = F, quote = F)
+```
+
+
+```r
 #To find genes that are differentially expressed in trt S, F & L vs R seperately
 dge.lrt.trtF <- glmLRT(dge.fit,coef = c("trtF"))
 #topTags(dge.lrt.trtF)
@@ -532,6 +537,10 @@ DEGs2.melt
 DEGs2.melt$gt <- gsub("(X)(\\.)(S|L|F)(\\.)", "\\1",DEGs2.melt$genotype)
 
 DEGs2.melt$trt <- gsub("(X)(\\.)(S|L|F)(\\.)", "\\2",DEGs2.melt$genotype)
+```
+
+
+```r
 ### making ggplot for DEGs
 library(ggplot2)
 p.DEGs2 <- ggplot(data = DEGs2.melt)
@@ -541,10 +550,10 @@ p.DEGs2 <- p.DEGs2 + labs(y = "number of differentially expressed genes", x = ""
 p.DEGs2
 ```
 
-![](Ferula_RNAseq_DGE_files/figure-html/unnamed-chunk-5-1.png)<!-- -->
+![](Ferula_RNAseq_DGE_files/figure-html/unnamed-chunk-8-1.png)<!-- -->
 
 ```r
-ggsave(p.DEGs2, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG2_v2.png")
+ggsave(p.DEGs2, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG2_v3.png")
 ```
 
 ```
