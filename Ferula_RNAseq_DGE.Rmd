@@ -2,10 +2,7 @@
 title: "Ferula_RNAseq_DEG"
 author: "Hajar"
 date: "June 8, 2017"
-output:
-  html_document:
-    keep_md: yes
-  pdf_document: default
+
 ---
 
 ```{r setup, include=FALSE}

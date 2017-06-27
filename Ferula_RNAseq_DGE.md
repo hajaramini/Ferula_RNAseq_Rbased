@@ -356,7 +356,7 @@ DEGs1.melt
 ```r
 DEGs1.melt$gt <- gsub("(X)(\\.)(S|L|F)(\\.)", "\\1",DEGs1.melt$genotype)
 
-DEGs1.melt$trt <- gsub("(X)(\\.)(R|S|L|F)(\\.)", "\\2",DEGs1.melt$genotype)
+DEGs1.melt$trt <- gsub("(X)(\\.)(S|L|F)(\\.)", "\\2",DEGs1.melt$genotype)
 
 
 ### making ggplot for DEGs
@@ -429,7 +429,7 @@ write.table(names, "top_transcripts.txt", col.names = F, row.names = F, quote = 
 names2 <-rownames(DEgenes2)
 names2 <- paste0("<",names2)
 names2 <- data.frame(names2)
-write.table(names, "All_transcripts.txt", col.names = F, row.names = F, quote = F)
+write.table(names2, "All_transcripts.txt", col.names = F, row.names = F, quote = F)
 #To find genes that are differentially expressed in trt S, F & L vs R seperately
 dge.lrt.trtF <- glmLRT(dge.fit,coef = c("trtF"))
 #topTags(dge.lrt.trtF)
@@ -531,7 +531,7 @@ DEGs2.melt
 ```r
 DEGs2.melt$gt <- gsub("(X)(\\.)(S|L|F)(\\.)", "\\1",DEGs2.melt$genotype)
 
-DEGs2.melt$trt <- gsub("(X)(\\.)(R|S|L|F)(\\.)", "\\2",DEGs2.melt$genotype)
+DEGs2.melt$trt <- gsub("(X)(\\.)(S|L|F)(\\.)", "\\2",DEGs2.melt$genotype)
 ### making ggplot for DEGs
 library(ggplot2)
 p.DEGs2 <- ggplot(data = DEGs2.melt)
