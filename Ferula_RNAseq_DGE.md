@@ -553,7 +553,7 @@ p.DEGs2
 ![](Ferula_RNAseq_DGE_files/figure-html/unnamed-chunk-8-1.png)<!-- -->
 
 ```r
-ggsave(p.DEGs2, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG2_v3.png")
+ggsave(p.DEGs2, file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.p.DEG2_v2.png")
 ```
 
 ```
