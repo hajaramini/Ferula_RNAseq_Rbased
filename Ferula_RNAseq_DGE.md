@@ -149,7 +149,7 @@ library(edgeR)
 
 ```r
 dge <- DGEList(counts=counts.small, group=samples.small$group) 
-length(colnames(counts.small)) # 20
+length(colnames(counts.small)) # 18
 ```
 
 ```
@@ -197,7 +197,7 @@ colnames(design1)
 
 ```r
 #First the overall dispersion
-dge <- estimateGLMCommonDisp(dge,design1, verbose = T) #Disp = 1.15 , BCV =  1.076 
+dge <- estimateGLMCommonDisp(dge,design1, verbose = T) #Disp = 0.89 , BCV =  0.94
 ```
 
 ```
@@ -214,31 +214,24 @@ plotBCV(dge)
 ![](Ferula_RNAseq_DGE_files/figure-html/unnamed-chunk-3-3.png)<!-- -->
 
 ```r
-dev.copy(png,'BCV.png')
-```
-
-```
-## quartz_off_screen 
-##                 3
-```
-
-```r
 mds.dge <- plotMDS(dge, method = "bcv",labels = dge$samples$group)
-dge.fit <- glmFit(dge, design1)
-#colnames(dge.fit)
 ```
+
+![](Ferula_RNAseq_DGE_files/figure-html/unnamed-chunk-3-4.png)<!-- -->
 
 #To find genes that are differentially expressed in gt 2 & 6 vs 3
 
 
 ```r
+dge.fit <- glmFit(dge, design1)
+#colnames(dge.fit)
 dge.lrt <- glmLRT(dge.fit,coef = c("genotype2","genotype6"))
 #the top 10 most differentially expressed genes
 #topTags(dge.lrt)
 #summary(decideTestsDGE(dge.lrt,p=0.05)) why error?
 #Extract genes with a FDR < 0.01 (could also use 0.05)
 DEgenes1 <- topTags(dge.lrt,n = Inf)$table[topTags(dge.lrt,n = Inf)$table$FDR<0.05,]
-dim(DEgenes1) #2096   6
+dim(DEgenes1) #2700   6
 ```
 
 ```
@@ -388,7 +381,7 @@ dge.lrt.trt <- glmLRT(dge.fit,coef = c("trtF","trtL", "trtS"))
 #Extract genes with a FDR < 0.01 (could also use 0.05)
 DEgenes2 <- topTags(dge.lrt.trt,n = Inf)$table[topTags(dge.lrt.trt,n = Inf)$table$FDR<0.05,]
 write.csv(DEgenes2,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEgenes1_v2.csv")
-dim(DEgenes2) #20140 7
+dim(DEgenes2) #12687 7
 ```
 
 ```

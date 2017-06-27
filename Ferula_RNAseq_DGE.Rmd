@@ -64,7 +64,7 @@ samples.small$genotype<-as.character(samples.small$genotype)
 ```{r}
 library(edgeR)
 dge <- DGEList(counts=counts.small, group=samples.small$group) 
-length(colnames(counts.small)) # 20
+length(colnames(counts.small)) # 18
 dge<-calcNormFactors(dge, method = "TMM")
 # look at the normalization factors
 nrow(dge$samples) # 18 
@@ -80,27 +80,27 @@ samples.small$trt <- relevel(samples.small$trt,ref="R")
 design1 <- model.matrix(~genotype+trt + facility, data=samples.small)
 colnames(design1)
 #First the overall dispersion
-dge <- estimateGLMCommonDisp(dge,design1, verbose = T) #Disp = 1.15 , BCV =  1.076 
+dge <- estimateGLMCommonDisp(dge,design1, verbose = T) #Disp = 0.89 , BCV =  0.94
 dge <- estimateGLMTrendedDisp(dge,design1)
 dge <- estimateGLMTagwiseDisp(dge,design1)
 save(dge,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/dge_v2.Rdata")
 plotBCV(dge)
-dev.copy(png,'BCV.png')
 mds.dge <- plotMDS(dge, method = "bcv",labels = dge$samples$group)
-dge.fit <- glmFit(dge, design1)
-#colnames(dge.fit)
+
 ```
 
 #To find genes that are differentially expressed in gt 2 & 6 vs 3
 
 ```{r}
+dge.fit <- glmFit(dge, design1)
+#colnames(dge.fit)
 dge.lrt <- glmLRT(dge.fit,coef = c("genotype2","genotype6"))
 #the top 10 most differentially expressed genes
 #topTags(dge.lrt)
 #summary(decideTestsDGE(dge.lrt,p=0.05)) why error?
 #Extract genes with a FDR < 0.01 (could also use 0.05)
 DEgenes1 <- topTags(dge.lrt,n = Inf)$table[topTags(dge.lrt,n = Inf)$table$FDR<0.05,]
-dim(DEgenes1) #2096   6
+dim(DEgenes1) #2700   6
 colnames(DEgenes1)
 #head(DEgenes1)
 #save to a file
@@ -153,7 +153,7 @@ dge.lrt.trt <- glmLRT(dge.fit,coef = c("trtF","trtL", "trtS"))
 #Extract genes with a FDR < 0.01 (could also use 0.05)
 DEgenes2 <- topTags(dge.lrt.trt,n = Inf)$table[topTags(dge.lrt.trt,n = Inf)$table$FDR<0.05,]
 write.csv(DEgenes2,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/output/Ferula_RNAseq.DEgenes1_v2.csv")
-dim(DEgenes2) #20140 7
+dim(DEgenes2) #12687 7
 #colnames(DEgenes2)
 head(DEgenes2)
 ```
