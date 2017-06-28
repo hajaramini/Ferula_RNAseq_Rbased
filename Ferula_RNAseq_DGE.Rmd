@@ -186,6 +186,26 @@ dge.lrt.trtS <- glmLRT(dge.fit,coef = c("trtS"))
 #topTags(dge.lrt.trtS)
 summary(decideTestsDGE(dge.lrt.trtS, p=0.05))
 
+#For finding the expression of each genes for each tissues
+decideTestsDGE(dge.lrt.trtF, p=0.05)
+a <- decideTestsDGE(dge.lrt.trtF, p=0.05)
+dge.lrt.trtF
+a[1:3]
+a[1:3,]
+a[1:3,1]
+dim(a)
+b <- rownames(dge.lrt.trtF$coefficients)
+c <- data.frame(b,a)
+View(c)
+dge.lrt.trtL <- glmLRT(dge.fit,coef = c("trtL"))
+d <- decideTestsDGE(dge.lrt.trtL, p=0.05)
+e <- decideTestsDGE(dge.lrt.trtS, p=0.05)
+c <- data.frame(b,a,d,e)
+all_trts <- c
+colnames(all_trts) <- c("Gene","Flower","Leaf","Stem")
+View(all_trts)
+
+
 DEGs2 <- data.frame ("trtF" = as.data.frame(summary(decideTestsDGE(dge.lrt.trtF, p=0.05)))$Freq,
                                      "trtL" = as.data.frame(summary(decideTestsDGE(dge.lrt.trtL, p=0.05)))$Freq,
                                      "trtS"= as.data.frame( summary(decideTestsDGE(dge.lrt.trtS, p=0.05)))$Freq)
