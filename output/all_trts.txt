@@ -1,4 +1,4 @@
-Gene Flower Leaf Stem
+Gene                  Flower Leaf Stem
 TRINITY_DN67662_c0_g1_i1 1 0 0
 TRINITY_DN67616_c0_g1_i1 0 0 0
 TRINITY_DN67687_c0_g1_i1 0 0 0
