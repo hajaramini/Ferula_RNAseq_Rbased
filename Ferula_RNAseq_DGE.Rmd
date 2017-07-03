@@ -204,7 +204,7 @@ c <- data.frame(b,a,d,e)
 all_trts <- c
 colnames(all_trts) <- c("Gene","Flower","Leaf","Stem")
 View(all_trts)
-
+write.table(all_trts, "all_trts.txt", col.names = T, row.names = F, quote = F)
 
 DEGs2 <- data.frame ("trtF" = as.data.frame(summary(decideTestsDGE(dge.lrt.trtF, p=0.05)))$Freq,
                                      "trtL" = as.data.frame(summary(decideTestsDGE(dge.lrt.trtL, p=0.05)))$Freq,
