@@ -47,3 +47,23 @@ combined <- merge(trans,temp, by.x = "X2", by.y = "X1")
 combined$X2 <- sub(" $","",combined$X2)
 
 write.table(combined, "Genes_and_Terms.tab", sep = "\t", row.names = F, col.names = F, quote = F)
+
+#distribution of contig length of trinity result
+
+test1=read.table("Trinity.fasta.bed",header=T,row.names=1)
+View(test1)
+colnames(test1)[1] <- "target_id"
+colnames(test1)[2] <- "length"
+hist(test1)
+hist(test1$length)
+hist(test1$length,breaks=50)
+test_short <- test1[test1$length <=1000, ]
+dim(test_short)
+test_short <- test1[test1$length <=400, ]
+test_short <- test1[test1$length <=300, ]
+hist(test_short$length,xlim=c(0,1000))
+###add discription of BUSCO for the result of running BUSCO
+info <- read_delim("embryophyta_3193_OrthoDB9_orthogroup_info.txt", delim = "\t", col_names = T)
+complete <- read_delim("Complete_BUSCO_name.txt", col_names = F, delim = "\t")
+info <- info[,1:3]
+test <- left_join(complete, info, by = c("X1" = "OrthoGroupID"))
