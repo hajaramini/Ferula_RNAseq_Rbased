@@ -13,8 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 #import data
 
 ```{r}
-counts_All <- read.csv("~/Ferula_RNASeq_Analysis/Kallisto_out/combined_All_counts_kallisto.csv", header=T, row.names="target_id")
-#head(counts) for pooling two library of BR3 (they are not replication)
+counts_All <- read.csv("~/Ferula_RNAseq_Rbased/Kallisto_out/combined_All_counts_kallisto.csv", header=T, row.names="target_id")
+#head(counts_All) for pooling two library of BR3 (they are not replication)
 counts_All$BR3.2 <- counts_All$BR3 + counts_All$BR3.1
 counts_All$BR3 <- NULL
 counts_All$BR3.1 <- NULL
@@ -26,7 +26,7 @@ colnames(counts_All)[18] <- "BF3"
 #colnames(counts_All)[1] 
 #rownames(counts_All)
 dim(counts_All) # 612953 18 158617 is num of transcripts in Reference
-write.csv(counts_All, file="~/Ferula_RNASeq_Analysis/Kallisto_out/combined_All_counts_kallisto.csv")
+write.csv(counts_All, file="~/Ferula_RNAseq_Rbased/Kallisto_out/combined_All_counts_kallisto.csv")
 ```
 #filter based on read count, assign group, normalize, design matrix
 ```{r}
@@ -50,8 +50,9 @@ counts_All[is.na(counts_All)]<-0
 counts_All_small <-counts_All[rowSums(counts_All > 10) >= 3,] 
 dim(counts_All_small) #90268 18 
 dim(counts_All) #612953 18
-write.csv(counts_All_small,file="~/Ferula_RNASeq_Analysis/Kallisto_out/combined_All_counts_small_kalliso.csv") # use this for other analysis
+write.csv(counts_All_small,file="~/Ferula_RNAseq_Rbased/Kallisto_out/combined_All_counts_small_kalliso.csv") # use this for other analysis
 ```
+
 ```{r}
 samples.small <- data.frame(file=colnames(counts.small),                     facility=factor(sub("(B|D|N)(S|F|L|R)(2|3|6)","\\1",colnames(counts.small))),
                       trt=factor(sub("(B|D|N)(S|F|L|R)(2|3|6)","\\2",colnames(counts.small))),
