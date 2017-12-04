@@ -1,0 +1,83 @@
+---
+title: "RNASeq_Ferula_Kallisto_DEG"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#After mapping reads in to kallisto, we want to find DEG for BGI_Nova_UnmappedDavis_Less50_Merged 
+#import data
+
+```{r}
+counts_All <- read.csv("~/Ferula_RNASeq_Analysis/Kallisto_out/combined_All_counts_kallisto.csv", header=T, row.names="target_id")
+#head(counts) for pooling two library of BR3 (they are not replication)
+counts_All$BR3.2 <- counts_All$BR3 + counts_All$BR3.1
+counts_All$BR3 <- NULL
+counts_All$BR3.1 <- NULL
+colnames(counts_All)[19] <- "BR3"
+counts_All$BF3.2 <- counts_All$BF3 + counts_All$BF3.1
+counts_All$BF3 <- NULL
+counts_All$BF3.1 <- NULL
+colnames(counts_All)[18] <- "BF3"
+#colnames(counts_All)[1] 
+#rownames(counts_All)
+dim(counts_All) # 612953 18 158617 is num of transcripts in Reference
+write.csv(counts_All, file="~/Ferula_RNASeq_Analysis/Kallisto_out/combined_All_counts_kallisto.csv")
+```
+#filter based on read count, assign group, normalize, design matrix
+```{r}
+hist(colSums(counts_All,na.rm=TRUE))
+colSums(counts_All,na.rm=TRUE)
+#general threshold
+colSums(counts_All,na.rm=TRUE) > 1000000 # all samples are true
+counts_All_nolow <- counts_All[,colSums(counts_All,na.rm=TRUE) > 1000000]
+dim(counts_All_nolow) #612953 16 but I prefer to work with all 18 libraries
+#sample description
+samples <- data.frame(file=colnames(counts_All),
+                      facility=factor(sub("(B|D|N)(S|F|L|R)(2|3|6)","\\1",colnames(counts_All))),
+                      trt=factor(sub("(B|D|N)(S|F|L|R)(2|3|6)","\\2",colnames(counts_All))),
+                    
+                      genotype=factor(sub("(B|D|N)(S|F|L|R)(2|3|6)","\\3",colnames(counts_All)))) 
+head(samples) 
+
+#convert NA to zero
+counts_All[is.na(counts_All)]<-0
+# eliminating genes with low expression levels by retaining genes with > 10 reads in >= 3 samples
+counts_All_small <-counts_All[rowSums(counts_All > 10) >= 3,] 
+dim(counts_All_small) #90268 18 
+dim(counts_All) #612953 18
+write.csv(counts_All_small,file="~/Ferula_RNASeq_Analysis/Kallisto_out/combined_All_counts_small_kalliso.csv") # use this for other analysis
+```
+```{r}
+samples.small <- data.frame(file=colnames(counts.small),                     facility=factor(sub("(B|D|N)(S|F|L|R)(2|3|6)","\\1",colnames(counts.small))),
+                      trt=factor(sub("(B|D|N)(S|F|L|R)(2|3|6)","\\2",colnames(counts.small))),
+                    
+                      genotype=factor(sub("(B|D|N)(S|F|L|R)(2|3|6)","\\3",colnames(counts.small)))) 
+head(samples.small)
+save(samples.small,file="/Users/hajaramini/Documents/Ferula_RNAseq_Rbased/input/Ferula_RNAseq.samples.small_v2.Rdata")
+#assign group by combining all the experimental factors into one combined factor
+Genotype<-levels(samples.small$genotype)
+samples.small$group <- paste(samples.small$genotype,samples.small$trt,samples.small$facility,sep=".")
+samples.small$genotype<-as.character(samples.small$genotype)
+```
+# Ward Hierarchical Clustering
+counts_Allt <- t(counts_All)
+d <- dist(countst, method = "euclidean") # distance matrix
+d2 <- dist(counts_Allt,method = "euclidean")
+fit <- hclust(d2, method="ward.D") 
+a <- plot(fit) # display dendogram
+a <- cutree(a, k=2) # cut tree into 5 clusters
+# draw dendogram with red borders around the 5 clusters 
+rect.hclust(a, k=2, border="red")
+# Ward Hierarchical Clustering with Bootstrapped p values
+library(pvclust)
+fit <- pvclust(counts, method.hclust="ward",
+   method.dist="euclidean")
+plot(fit) # dendogram with p values
+# add rectangles around groups highly supported by the data
+pvrect(fit, alpha=.95)
+```
