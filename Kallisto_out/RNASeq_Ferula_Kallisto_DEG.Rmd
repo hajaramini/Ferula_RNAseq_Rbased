@@ -3,6 +3,8 @@ title: "RNASeq_Ferula_Kallisto_DEG"
 output:
   html_document:
     keep_md: yes
+    number_sections: yes
+    toc: yes
   pdf_document: default
 ---
 
