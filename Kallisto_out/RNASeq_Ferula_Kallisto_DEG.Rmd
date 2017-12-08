@@ -1,9 +1,9 @@
 ---
 title: "RNASeq_Ferula_Kallisto_DEG"
 output:
-  pdf_document: default
   html_document:
     keep_md: yes
+  pdf_document: default
 ---
 
 #After mapping reads in to kallisto, we want to find DEG for BGI_Nova_UnmappedDavis_Less50_Merged 
