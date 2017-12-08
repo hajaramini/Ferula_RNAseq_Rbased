@@ -1,0 +1,22 @@
+{
+    "read_files": "( /share/malooflab/Hajar/process.fastq/paired_FCH3KMWBBXX-HKPLAkyeEAADRAAPEI-218_L6_1.fq.gz, /share/malooflab/Hajar/process.fastq/paired_FCH3KMWBBXX-HKPLAkyeEAADRAAPEI-218_L6_2.fq.gz )",
+    "expected_format": "IU",
+    "compatible_fragment_ratio": 0.9984991191593704,
+    "num_compatible_fragments": 7029300,
+    "num_assigned_fragments": 7039866,
+    "num_consistent_mappings": 22055563,
+    "num_inconsistent_mappings": 167963,
+    "strand_mapping_bias": 0.5004299822226257,
+    "MSF": 0,
+    "OSF": 835,
+    "ISF": 11018298,
+    "MSR": 0,
+    "OSR": 862,
+    "ISR": 11037265,
+    "SF": 64577,
+    "SR": 65250,
+    "MU": 0,
+    "OU": 0,
+    "IU": 0,
+    "U": 0
+}

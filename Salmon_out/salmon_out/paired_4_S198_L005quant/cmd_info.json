@@ -1,0 +1,10 @@
+{
+    "salmon_version": "0.8.2",
+    "index": "/share/malooflab/Hajar/Salmon/Salmon_BGI_Nova_UnmappedDavis_Less50_Merged/Trinity_index",
+    "threads": "10",
+    "libType": "IU",
+    "mates1": "/share/malooflab/Hajar/process.fastq/unmapped.paired_4_S198_L005_1.fq.gz",
+    "mates2": "/share/malooflab/Hajar/process.fastq/unmapped.paired_4_S198_L005_2.fq.gz",
+    "output": "/share/malooflab/Hajar/process.fastq/unmapped.paired_4_S198_L005quant",
+    "auxDir": "aux_info"
+}

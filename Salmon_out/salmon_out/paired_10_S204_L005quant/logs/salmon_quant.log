@@ -1,0 +1,37 @@
+[2017-11-28 12:23:11.064] [jointLog] [info] parsing read library format
+[2017-11-28 12:23:11.064] [jointLog] [info] There is 1 library.
+[2017-11-28 12:23:11.145] [jointLog] [info] Loading Quasi index
+[2017-11-28 12:23:11.150] [jointLog] [info] Loading 32-bit quasi index
+[2017-11-28 12:26:42.206] [jointLog] [info] done
+[2017-11-28 12:26:42.206] [jointLog] [info] Index contained 612953 targets
+[2017-11-28 12:28:48.180] [fileLog] [info] 
+At end of round 0
+==================
+Observed 7019273 total fragments (7019273 in most recent round)
+
+[2017-11-28 12:28:48.177] [jointLog] [info] Computed 194141 rich equivalence classes for further processing
+[2017-11-28 12:28:48.177] [jointLog] [info] Counted 5077616 total reads in the equivalence classes 
+[2017-11-28 12:28:48.205] [jointLog] [info] Mapping rate = 72.3382%
+
+[2017-11-28 12:28:48.205] [jointLog] [info] finished quantifyLibrary()
+[2017-11-28 12:28:48.226] [jointLog] [info] Starting optimizer
+[2017-11-28 12:28:48.587] [jointLog] [info] Marked 0 weighted equivalence classes as degenerate
+[2017-11-28 12:28:48.628] [jointLog] [info] iteration = 0 | max rel diff. = 2.05698
+[2017-11-28 12:28:50.276] [jointLog] [info] iteration = 100 | max rel diff. = 0.0978231
+[2017-11-28 12:28:51.791] [jointLog] [info] iteration = 200 | max rel diff. = 0.05235
+[2017-11-28 12:28:53.326] [jointLog] [info] iteration = 300 | max rel diff. = 0.039027
+[2017-11-28 12:28:54.830] [jointLog] [info] iteration = 400 | max rel diff. = 0.0645531
+[2017-11-28 12:28:56.311] [jointLog] [info] iteration = 500 | max rel diff. = 0.0240105
+[2017-11-28 12:28:57.897] [jointLog] [info] iteration = 600 | max rel diff. = 0.0176756
+[2017-11-28 12:28:59.451] [jointLog] [info] iteration = 700 | max rel diff. = 0.0163326
+[2017-11-28 12:29:01.055] [jointLog] [info] iteration = 800 | max rel diff. = 0.0137773
+[2017-11-28 12:29:02.764] [jointLog] [info] iteration = 900 | max rel diff. = 0.0121547
+[2017-11-28 12:29:04.284] [jointLog] [info] iteration = 1000 | max rel diff. = 0.0139246
+[2017-11-28 12:29:04.993] [jointLog] [info] iteration = 1047 | max rel diff. = 0.00980225
+[2017-11-28 12:29:05.070] [jointLog] [info] Finished optimizer
+[2017-11-28 12:29:05.070] [jointLog] [info] writing output 
+
+[2017-11-28 12:29:10.724] [jointLog] [warning] NOTE: Read Lib [( /share/malooflab/Hajar/process.fastq/unmapped.paired_10_S204_L005_1.fq.gz, /share/malooflab/Hajar/process.fastq/unmapped.paired_10_S204_L005_2.fq.gz )] :
+
+Detected a *potential* strand bias > 1% in an unstranded protocol check the file: /share/malooflab/Hajar/process.fastq/unmapped.paired_10_S204_L005quant/lib_format_counts.json for details
+
