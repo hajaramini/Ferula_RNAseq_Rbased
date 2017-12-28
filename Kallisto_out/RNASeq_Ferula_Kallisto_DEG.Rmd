@@ -5,13 +5,13 @@ output:
     keep_md: yes
     number_sections: yes
     toc: yes
-  pdf_document: default
 ---
 
 #After mapping reads in to kallisto, we want to find DEG for BGI_Nova_UnmappedDavis_Less50_Merged 
 #import data
 ```{r}
 counts_All <- read.csv("~/Ferula_RNAseq_Rbased/Kallisto_out/combined_All_counts_kallisto.csv", header=T , row.names = "target_id")
+```
 #head(counts_All) for pooling two library of BR3 (they are not replication)
 #counts_All$BR3.2 <- counts_All$BR3 + counts_All$BR3.1
 #counts_All$BR3 <- NULL
@@ -31,7 +31,7 @@ counts_All <- read.csv("~/Ferula_RNAseq_Rbased/Kallisto_out/combined_All_counts_
 hist(colSums(counts_All,na.rm=TRUE))
 colSums(counts_All,na.rm=TRUE)
 #general threshold
-colSums(counts_All,na.rm=TRUE) > 1000000 # all samples are true
+colSums(counts_All,na.rm=TRUE) > 1000000 
 counts_All_nolow <- counts_All[,colSums(counts_All,na.rm=TRUE) > 1000000]
 dim(counts_All_nolow) #612953 16 but I prefer to work with all 18 libraries
 #sample description
@@ -238,6 +238,8 @@ names2 <- paste0("<",names2)
 names2 <- data.frame(names2)
 write.table(names2, "All_transcripts.txt", col.names = F, row.names = F, quote = F)
 ```
+
+
 
 # Ward Hierarchical Clustering
 counts_Allt <- t(counts_All)

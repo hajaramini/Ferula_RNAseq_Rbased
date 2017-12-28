@@ -1,5 +1,5 @@
 ---
-title: "RNASeq_Ferula_Kaliisto_DEG_Drap_Trinity"
+title: "RNASeq_Ferula_Kallisto_DEG_Drap_Trinity"
 output: 
   html_document: 
     keep_md: yes
@@ -8,6 +8,7 @@ output:
 #After mapping reads in to kallisto, we want to find DEG for Plant6_Filtered 
 #import data
 ```{r}
+
 counts_All <- read.csv("~/Ferula_RNAseq_Rbased/Kallisto_out/combined_Plant6_counts_kallisto.csv", header=T , row.names = "target_id")
 head(counts_All) #for pooling two library of BR3 (they are not replication)
 counts_All$BR3.2 <- counts_All$BR3 + counts_All$BR3.1
