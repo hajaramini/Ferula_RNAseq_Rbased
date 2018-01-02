@@ -73,12 +73,12 @@ save(counts_ALL, datExpr0flower, datExpr0leaf, datExpr0root, datExpr0stem,leafvo
 
 ```{r}
 #since samples with not missing values so leafvoom, stemvoom, rootvoom and flowervoom equal to datExpr0, we can use multiExpr instead of datExpr0
-nSet <- 4
+#nSet <- 4
 # For easier labeling of plots, create a vector holding descriptive names of the four sets.
 setLabels = c("Leaf", "Stem", "Root", "Flower")
 shortLabels = setLabels
 
-# Form multi-set expression data: columns starting from 9 contain actual expression data.
+# Form multi-set expression data
 multiExpr = vector(mode = "list", length = nSets)
 
 multiExpr[[1]] = list(data = as.data.frame(leafvoom))
