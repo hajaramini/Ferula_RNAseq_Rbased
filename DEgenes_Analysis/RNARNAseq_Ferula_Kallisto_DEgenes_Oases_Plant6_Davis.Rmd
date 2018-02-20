@@ -1,5 +1,5 @@
 ---
-title: "RNARNAseq_Ferula_Kallisto_DEgenes_Oases_Plant6_Davis"
+title: "RNAseq_Ferula_Kallisto_DEgenes_Oases_Plant6_Davis"
 output: 
   html_document: 
     keep_md: yes
