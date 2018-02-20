@@ -1,0 +1,356 @@
+---
+title: "RNASeq_Ferula_Kallisto_DEG_Drap_Oases_Plant6_WGCNA"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#first start with DEgenes of Drap_Oases_Plant6
+
+```{r}
+library(WGCNA)
+library(DESeq2)
+library(tidyverse); library(limma)
+```
+
+#import input from Kallisto_out folder
+
+```{r}
+counts_ALL <- read.csv("../Kallisto_out/picked_genes_diff_expr.withexpre.v2", header = F , row.names=1)
+dim(counts_ALL) # 11777
+colnames(counts_ALL) <- c("DS6","DF6","DL6","DR3","DS3","DF3","DL3","DR2","DS2","DF2","DL2","DR6","NF3","NF6","NR3","NR6","BR3","BF3")
+
+# Filter out feature if there are less than 100 reads in more than 90% of samples
+#filtered.counts <- counts_ALL[rowSums(counts_ALL<100)<18,]
+```
+
+# Splitting the samples into different tissues types
+
+```{r}
+leaf <- counts_ALL[,c(3, 7, 11)]
+stem <- counts_ALL[,c(1, 5, 9)]
+root <- counts_ALL[,c(4, 8, 12, 15, 16, 17)]
+flower <- counts_ALL[,c(2, 6, 10, 13, 14, 18)]
+```
+
+# Normalizing function
+
+```{r}
+leafvoom = t(voom(leaf)$E)
+stemvoom = t(voom(stem)$E)
+rootvoom = t(voom(root)$E)
+flowervoom = t(voom(flower)$E)
+```
+
+# Checks for genes and samples with too many missing values, not have missing value
+
+```{r}
+#since samples with not missing values so leafvoom, stemvoom, rootvoom and flowervoom equal to datExpr0
+
+datExpr0root = as.data.frame((rootvoom));
+rownames(datExpr0root) #number of the samples
+nSamples <- nrow(datExpr0root) #6
+nGenes <- ncol(datExpr0root) #11778
+
+gsg = goodSamplesGenes(datExpr0root) 
+gsg$allOK #TRUE If the last statement returns TRUE, all genes have passed the cuts
+
+datExpr0leaf = as.data.frame((leafvoom))
+nSamples <- nrow(datExpr0leaf) #3
+datExpr0stem = as.data.frame((stemvoom))
+nSamples <- nrow(datExpr0stem) #3
+datExpr0flower = as.data.frame((flowervoom))
+nSamples <- nrow(datExpr0flower) #6
+#The variables datExpr0flower, datExpr0leaf, datExpr0root, datExpr0stem,  now contains the expression data ready for network analysis
+save(counts_ALL, datExpr0flower, datExpr0leaf, datExpr0root, datExpr0stem,leafvoom, stemvoom, rootvoom, flowervoom, file = "dataInput.RData")
+```
+
+# We work with four sets, 
+
+```{r}
+#since samples with not missing values so leafvoom, stemvoom, rootvoom and flowervoom equal to datExpr0, we can use multiExpr instead of datExpr0
+#nSet <- 4
+# For easier labeling of plots, create a vector holding descriptive names of the four sets.
+setLabels = c("Leaf", "Stem", "Root", "Flower")
+shortLabels = setLabels
+
+# Form multi-set expression data
+multiExpr = vector(mode = "list", length = nSets)
+
+multiExpr[[1]] = list(data = as.data.frame(leafvoom))
+names(multiExpr[[1]]$data) = colnames(leafvoom)
+rownames(multiExpr[[1]]$data) = rownames(leafvoom)
+nSamples <- nrow(multiExpr[[1]]$data) #3
+nGenes <- ncol(multiExpr[[1]]$data) #11778
+
+multiExpr[[2]] = list(data = as.data.frame(stemvoom))
+names(multiExpr[[2]]$data) = colnames(stemvoom)
+rownames(multiExpr[[2]]$data) = rownames(stemvoom)
+nSamples <- nrow(multiExpr[[2]]$data) #3
+nGenes <- ncol(multiExpr[[2]]$data) #11778
+
+multiExpr[[3]] = list(data = as.data.frame(rootvoom))
+names(multiExpr[[3]]$data) = colnames(rootvoom)
+rownames(multiExpr[[3]]$data) = rownames(rootvoom)
+nSamples <- nrow(multiExpr[[3]]$data) #6
+nGenes <- ncol(multiExpr[[3]]$data) #11778
+
+multiExpr[[4]] = list(data = as.data.frame(flowervoom))
+names(multiExpr[[4]]$data) = colnames(flowervoom)
+rownames(multiExpr[[4]]$data) = rownames(flowervoom)
+nSamples <- nrow(multiExpr[[4]]$data) #6
+nGenes <- ncol(multiExpr[[4]]$data) #11778
+
+# Check that the data has the correct format for many functions operating on multiple sets
+exprSize = checkSets(multiExpr)
+
+```
+
+#Check the cluster of the samples (gene clustering will be later)
+
+```{r}
+sampleTrees = list()
+for (set in 1:nSets) {
+  sampleTrees[[set]] = hclust(dist(multiExpr[[set]]$data), method = "average")
+}
+pdf(file = "Plot/SampleClustering.pdf", width = 12, height = 12);
+par(mfrow=c(2,1))
+par(mar = c(0, 4, 2, 0))
+for (set in 1:nSets)
+  plot(sampleTrees[[set]], main = paste("Sample clustering on all genes in", setLabels[set]),
+    xlab="", sub="", cex = 0.7);
+dev.off();
+#abline(h=15, col="red") #got error
+
+```
+
+#Plot to see what soft-thresholding powers would be appropriate
+
+```{r}
+# Choose a set of soft-thresholding powers
+powers = c(seq(4,10,by=1), seq(12,20, by=2))
+
+# Initialize a list to hold the results of scale-free analysis
+powerTables = vector(mode = "list", length = nSets)
+
+# Call the network topology analysis function for each set in turn
+#The aim of pickSoftThreshold function is to help the user pick an appropriate soft-thresholding power for network construction
+for (set in 1:nSets)
+powerTables[[set]] = list(data = pickSoftThreshold(multiExpr[[set]]$data, powerVector=powers, verbose = 2)[[2]])
+collectGarbage()
+
+# Plot the results:
+colors = c("black", "red", "blue", "green")
+
+# Will plot these columns of the returned scale free analysis tables
+plotCols = c(2,5,6,7)
+colNames = c("Scale Free Topology Model Fit", "Mean connectivity", "Median connectivity",
+"Max connectivity")
+
+# Get the minima and maxima of the plotted points
+ylim = matrix(NA, nrow = 2, ncol = 4);
+for (set in 1:nSets) {
+  for (col in 1:length(plotCols)) {
+    ylim[1, col] = min(ylim[1, col], powerTables[[set]]$data[, plotCols[col]], na.rm = TRUE);
+    ylim[2, col] = max(ylim[2, col], powerTables[[set]]$data[, plotCols[col]], na.rm = TRUE);
+  }
+}
+```
+
+# Plot the quantities in the chosen columns vs. the soft thresholding power
+
+```{r}
+sizeGrWindow(8, 6)
+pdf(file = "Plot/scaleFreeAnalysis.pdf", wi = 8, he = 6)
+par(mfcol = c(2,2));
+par(mar = c(4.2, 4.2 , 2.2, 0.5))
+cex1 = 0.7;
+for (col in 1:length(plotCols)) for (set in 1:nSets) {
+  if (set==1) {
+    plot(powerTables[[set]]$data[,1], -sign(powerTables[[set]]$data[,3])*powerTables[[set]]$data[,2],
+        xlab="Soft Threshold (power)",ylab=colNames[col],type="n", ylim = ylim[, col],
+        main = colNames[col]);
+    addGrid();
+  }
+  if (col==1) {
+    text(powerTables[[set]]$data[,1], -sign(powerTables[[set]]$data[,3])*powerTables[[set]]$data[,2],
+        labels=powers,cex=cex1,col=colors[set]);
+  } else
+  text(powerTables[[set]]$data[,1], powerTables[[set]]$data[,plotCols[col]],
+      labels=powers,cex=cex1,col=colors[set]);
+  if (col==1) {
+    legend("bottomright", legend = setLabels, col = colors, pch = 20) ;
+  } else
+    legend("topright", legend = setLabels, col = colors, pch = 20) ;
+}
+dev.off();
+
+```
+
+#One-step network construction and module detection
+
+```{r}
+multiExprFR = vector(mode = "list", length = 4)
+multiExprFR[[1]] = list(data = as.data.frame(leafvoom))
+names(multiExprFR[[1]]$data) = colnames(leafvoom)
+rownames(multiExprFR[[1]]$data) = rownames(leafvoom)
+
+multiExprFR[[2]] = list(data = as.data.frame(stemvoom))
+names(multiExprFR[[2]]$data) = colnames(stemvoom)
+rownames(multiExprFR[[2]]$data) = rownames(stemvoom)
+
+multiExprFR[[3]] = list(data = as.data.frame(rootvoom))
+names(multiExprFR[[3]]$data) = colnames(rootvoom)
+rownames(multiExprFR[[3]]$data) = rownames(rootvoom)
+
+multiExprFR[[4]] = list(data = as.data.frame(flowervoom))
+names(multiExprFR[[4]]$data) = colnames(flowervoom)
+rownames(multiExprFR[[4]]$data) = rownames(flowervoom)
+
+save(multiExprFR, file = "multiExprFR.RData");
+```
+
+#Leaf and Shoot do not have enough samples. Try just with flower and root
+```{r}
+multiExprFR = vector(mode = "list", length = 2)
+
+multiExprFR[[1]] = list(data = as.data.frame(rootvoom))
+names(multiExprFR[[1]]$data) = colnames(rootvoom)
+rownames(multiExprFR[[1]]$data) = rownames(rootvoom)
+
+multiExprFR[[2]] = list(data = as.data.frame(flowervoom))
+names(multiExprFR[[2]]$data) = colnames(flowervoom)
+rownames(multiExprFR[[2]]$data) = rownames(flowervoom)
+
+save(multiExprFR, file = "multiExprFR.RData");  #get number of module and number of genes for each module
+```
+
+#building net for root and flower together by power=10 instead of 6
+
+```{r}
+net = blockwiseConsensusModules(
+        multiExprFR, power = 10, minModuleSize = 30, deepSplit = 2, 
+        pamRespectsDendro = FALSE, 
+        mergeCutHeight = 0.25, numericLabels = TRUE, 
+        minKMEtoStay = 0,
+        saveTOMs = TRUE, verbose = 5)
+
+table(net$colors)
+```
+
+#Build the modules for each tissue separately
+
+```{r}
+#for root tissue
+netR = blockwiseConsensusModules(
+       multiExprFR[1], power = 10, minModuleSize = 30, deepSplit = 2, 
+        pamRespectsDendro = FALSE, 
+        mergeCutHeight = 0.25, numericLabels = TRUE, 
+        minKMEtoStay = 0,
+        saveTOMs = TRUE, verbose = 5)
+
+table(netR$colors)
+
+#for flower tissue
+netF = blockwiseConsensusModules(
+       multiExprFR[2], power = 10, minModuleSize = 30, deepSplit = 2, 
+        pamRespectsDendro = FALSE, 
+        mergeCutHeight = 0.25, numericLabels = TRUE, 
+        minKMEtoStay = 0,
+        saveTOMs = TRUE, verbose = 5)
+table(netF$colors)
+
+```
+
+#Important info from previous step output
+
+```{r}
+#first for net of RF
+consMEs = net$multiMEs
+moduleLabels = net$colors
+# Convert the numeric labels to color labels
+moduleColors = labels2colors(moduleLabels)
+consTree = net$dendrograms[[1]] # why we have to pick [1] rather than 2 and 3
+
+#for net of just root
+consMEsR = netR$multiMEs
+moduleLabelsR = netR$colors
+# Convert the numeric labels to color labels
+moduleColorsR = labels2colors(moduleLabelsR)
+consTreeR = netR$dendrograms[[1]]
+
+
+#for net of just flower
+consMEsF = netF$multiMEs
+moduleLabelsF = netF$colors
+# Convert the numeric labels to color labels
+moduleColorsF = labels2colors(moduleLabelsF)
+consTreeF = netF$dendrograms[[1]]
+
+```
+
+#plot the gene dendrogram and the corresponding module colors ??I am not sure of this code to draw figure
+
+```{r}
+#for root and flower together
+sizeGrWindow(8,6);
+pdf(file = "Plot/ConsensusDendrogramFR-auto.pdf", wi = 8, he = 6)
+plotDendroAndColors(dendro = consTree, colors = moduleColors[net$blockGenes[[1]]],
+      groupLabels = "Module colors",
+      dendroLabels = FALSE, hang = 0.03,
+      addGuide = TRUE, guideHang = 0.05,
+      main = "Consensus gene dendrogram and module colors")
+dev.off()
+
+#for root 
+sizeGrWindow(8,6);
+pdf(file = "Plot/ConsensusDendrogramR-auto.pdf", wi = 8, he = 6)
+plotDendroAndColors(dendro = consTreeR, colors = moduleColorsR[netR$blockGenes[[1]]],
+      groupLabels = "Module colors",
+      dendroLabels = FALSE, hang = 0.03,
+      addGuide = TRUE, guideHang = 0.05,
+      main = "Consensus gene dendrogram and module colors")
+dev.off()
+
+#for flower
+
+sizeGrWindow(8,6);
+pdf(file = "Plot/ConsensusDendrogramF-auto.pdf", wi = 8, he = 6)
+plotDendroAndColors(dendro = consTreeF, colors = moduleColorsF[netF$blockGenes[[1]]],
+      groupLabels = "Module colors",
+      dendroLabels = FALSE, hang = 0.03,
+      addGuide = TRUE, guideHang = 0.05,
+      main = "Consensus gene dendrogram and module colors")
+dev.off()
+
+save(consMEs, consMEsF, consMEsR, moduleLabels, moduleLabelsF, moduleLabelsR, moduleColors, moduleColorsF, moduleColorsR, consTree,consTreeF, consTreeR, file = "Consensus-NetworkConstruction-auto.RData")
+```
+
+#To extract the genes name of each module
+
+```{r}
+#for module of root and flower together
+moduleLabelsFR <-moduleLabels
+write.table(moduleLabelsFR, "moduleLabelsFR.txt", sep="\t")
+genesID <- rownames(counts_ALL)
+write.table(genesID, "genesID.txt", sep="\t") 
+#then paste moduleLabelsFR.txt with genesID.txt. The output is FR_merged_genesID.txt
+
+#for module of just root
+moduleLabelsR <-moduleLabelsR
+write.table(moduleLabelsR, "moduleLabelsR.txt", sep="\t")
+genesID <- rownames(counts_ALL)
+write.table(genesID, "genesID.txt", sep="\t") 
+#then paste moduleLabelsR.txt with genesID.txt. The output is R_merged_genesID.txt
+
+#for module of just flower
+moduleLabelsF <-moduleLabelsF
+write.table(moduleLabelsF, "moduleLabelsF.txt", sep="\t")
+genesID <- rownames(counts_ALL)
+write.table(genesID, "genesID.txt", sep="\t") 
+#then paste moduleLabelsR.txt with genesID.txt. The output is F_merged_genesID.txt
+```

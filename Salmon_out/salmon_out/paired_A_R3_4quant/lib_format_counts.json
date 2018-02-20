@@ -1,0 +1,22 @@
+{
+    "read_files": "( /share/malooflab/Hajar/process.fastq/paired_A_R3_4_1.fq.gz, /share/malooflab/Hajar/process.fastq/paired_A_R3_4_2.fq.gz )",
+    "expected_format": "IU",
+    "compatible_fragment_ratio": 0.992247146131164,
+    "num_compatible_fragments": 17888302,
+    "num_assigned_fragments": 18028071,
+    "num_consistent_mappings": 52811356,
+    "num_inconsistent_mappings": 1500334,
+    "strand_mapping_bias": 0.499895874667562,
+    "MSF": 0,
+    "OSF": 10283,
+    "ISF": 26411177,
+    "MSR": 0,
+    "OSR": 10328,
+    "ISR": 26400179,
+    "SF": 519708,
+    "SR": 521330,
+    "MU": 0,
+    "OU": 0,
+    "IU": 0,
+    "U": 0
+}
